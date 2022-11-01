@@ -25,6 +25,6 @@ fi
 
 for i in {1..10}; do
   $WGET "${BASE_URL}s${i}.zip?download=1" -O "${DIR_BASE}/s${i}.zip"
-  unzip -q "${DIR_BASE}/s${i}.zip" -d "${DIR_BASE}/s${i}"
+  unzip -q "${DIR_BASE}/s${i}.zip" -d "${DIR_BASE}"
   rm -f "${DIR_BASE}/s${i}.zip"
 done
