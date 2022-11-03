@@ -23,7 +23,7 @@ def process_butter_low(x: NDArray, cutoff=2., fs=200., order=4) -> NDArray:
 
     inn = [x[i] for i in range(x.shape[0])]
     with ThreadPoolExecutor(max_workers=min(32, os.cpu_count() + 4)) as executor:
-        z = executor.map(partial(butter_low, cutoff=cutoff, fs=fs, order=order), inn)
+        z = [r for r in executor.map(partial(butter_low, cutoff=cutoff, fs=fs, order=order), inn)]
     del inn
     gc.collect()
     return np.asarray(z)
@@ -42,7 +42,7 @@ def process_butter_high(x: NDArray, cutoff=2., fs=200., order=4) -> NDArray:
 
     inn = [x[i] for i in range(x.shape[0])]
     with ThreadPoolExecutor(max_workers=min(32, os.cpu_count() + 4)) as executor:
-        z = executor.map(partial(butter_high, cutoff=cutoff, fs=fs, order=order), inn)
+        z = [r for r in executor.map(partial(butter_high, cutoff=cutoff, fs=fs, order=order), inn)]
     del inn
     gc.collect()
     return np.asarray(z)
@@ -62,7 +62,7 @@ def process_butter_band(x: NDArray, lcut=5., hcut=99., fs=200., order=4) -> NDAr
 
     inn = [x[i] for i in range(x.shape[0])]
     with ThreadPoolExecutor(max_workers=min(32, os.cpu_count() + 4)) as executor:
-        z = executor.map(partial(butter_low, lcut=lcut, hcut=hcut, fs=fs, order=order), inn)
+        z = [r for r in executor.map(partial(butter_low, lcut=lcut, hcut=hcut, fs=fs, order=order), inn)]
     del inn
     gc.collect()
     return np.asarray(z)

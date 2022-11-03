@@ -40,7 +40,7 @@ def replace_by_first_label(x: NDArray) -> NDArray:
 
     inn = [x[i] for i in range(x.shape[0])]
     with ThreadPoolExecutor(max_workers=min(32, os.cpu_count() + 4)) as executor:
-        z = executor.map(_get_first_label, inn)
+        z = [r for r in executor.map(_get_first_label, inn)]
     del inn
     gc.collect()
     return np.asarray(z)
@@ -56,7 +56,7 @@ def replace_by_major_label(x: NDArray) -> NDArray:
 
     inn = [x[i] for i in range(x.shape[0])]
     with ThreadPoolExecutor(max_workers=min(32, os.cpu_count() + 4)) as executor:
-        z = executor.map(_get_first_label, inn)
+        z = [r for r in executor.map(_get_major_label, inn)]
     del inn
     gc.collect()
     return np.asarray(z)
