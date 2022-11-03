@@ -12,7 +12,6 @@ if __name__ == '__main__':
     parser.add_argument('--save', type=str, help='The save path')
     parser.add_argument('--ver', type=int, default=1, help='The processing version')
     parser.add_argument('--imu', action='store_true', default=False, help='Using IMU data')
-    parser.add_argument('--mean', action='store_true', default=False, help='Using mean-shift')
     parser.add_argument('--rectify', action='store_true', default=False, help='Using signal rectifying')
     parser.add_argument('--butter', action='store_true', default=False, help='Using butterworth filter')
     parser.add_argument('--ssize', type=int, default=5, help='step size')
@@ -25,9 +24,6 @@ if __name__ == '__main__':
     folder = f'ver{args.ver}_'
     if args.imu:
         folder += 'imu_'
-
-    if args.mean:
-        folder += 'mean_'
 
     if args.rectify:
         folder += 'rectify_'
