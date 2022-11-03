@@ -69,7 +69,7 @@ class Nina1Data(pl.LightningDataModule):
         self.test = None
 
     def setup(self, stage: [None | str] = None) -> None:
-        if stage is (None, 'train'):
+        if stage in (None, 'train'):
             data_train = np.load(str(self.path / 'train.npz'), allow_pickle=True)
             data_val = np.load(str(self.path / 'val.npz'), allow_pickle=True)
             data_test = np.load(str(self.path / 'test.npz'), allow_pickle=True)
@@ -143,7 +143,7 @@ class Nina4Data(pl.LightningDataModule):
         self.test = None
 
     def setup(self, stage: [None | str] = None) -> None:
-        if stage is (None, 'train'):
+        if stage in (None, 'train'):
             data_train = np.load(str(self.path / 'train.npz'), allow_pickle=True)
             data_val = np.load(str(self.path / 'val.npz'), allow_pickle=True)
             data_test = np.load(str(self.path / 'test.npz'), allow_pickle=True)
@@ -217,7 +217,7 @@ class Nina5Data(pl.LightningDataModule):
         self.test = None
 
     def setup(self, stage: [None | str] = None) -> None:
-        if stage is (None, 'train'):
+        if stage in (None, 'train'):
             data_train = np.load(str(self.path / 'train.npz'), allow_pickle=True)
             data_val = np.load(str(self.path / 'val.npz'), allow_pickle=True)
             data_test = np.load(str(self.path / 'test.npz'), allow_pickle=True)

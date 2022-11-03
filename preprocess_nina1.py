@@ -50,7 +50,6 @@ if __name__ == '__main__':
 
     # initiate preprocessing
     processor = Nina1Processor(path=args.path,
-                               use_mean=args.mean,
                                use_rectify=args.rectify,
                                use_butter=args.butter,
                                ssize=args.ssize,

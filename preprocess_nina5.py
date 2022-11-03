@@ -55,7 +55,6 @@ if __name__ == '__main__':
     # initiate preprocessing
     processor = Nina5Processor(path=args.path,
                                use_imu=args.imu,
-                               use_mean=args.mean,
                                use_rectify=args.rectify,
                                use_butter=args.butter,
                                ssize=args.ssize,
