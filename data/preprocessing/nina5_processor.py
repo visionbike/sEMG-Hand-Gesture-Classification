@@ -22,7 +22,6 @@ class Nina5Processor(BaseProcessor):
     def __init__(self,
                  path: str,
                  use_imu: bool = False,
-                 use_mean: bool = False,
                  use_butter: bool = True,
                  use_rectify: bool = True,
                  ssize: int = 5,
@@ -33,7 +32,6 @@ class Nina5Processor(BaseProcessor):
 
         :param path: the input data path.
         :param use_imu: whether to use imu. Default: False.
-        :param use_mean: whether to use zero-mean shifting. Default: False.
         :param use_butter: whether to use butterworth filter. Default: True.
         :param use_rectify: whether to use rectifying. Default: True.
         :param ssize: step size for window rolling. Default: 5.
@@ -59,7 +57,6 @@ class Nina5Processor(BaseProcessor):
 
         self.path = Path(path)
         self.use_imu = use_imu
-        self.use_mean = use_mean
         self.use_butter = use_butter
         self.use_rectify = use_rectify
         self.step_size = ssize
@@ -155,9 +152,6 @@ class Nina5Processor(BaseProcessor):
 
         print('### Processing data...')
         self.pemgs = self.emgs.copy()
-        if self.use_mean:
-            print('Zero-mean shifting...')
-            self.pemgs = [emg - np.mean(emg, axis=0, keepdims=True) for emg in self.pemgs]
         if self.use_rectify:
             print('Rectifying...')
             self.pemgs = [np.abs(emg) for emg in self.pemgs]
@@ -274,9 +268,6 @@ class Nina5Processor(BaseProcessor):
             self.preps = replace_by_major_label(self.preps)
 
         print('### Processing data...')
-        if self.use_mean:
-            print('Zero-mean shifting...')
-            self.pemgs = self.pemgs - np.mean(self.pemgs, axis=1, keepdims=True)
         if self.use_rectify:
             print('Rectifying...')
             self.pemgs = np.abs(self.pemgs)

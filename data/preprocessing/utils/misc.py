@@ -1,5 +1,6 @@
 import gc
-import multiprocessing as multproc
+import os
+from concurrent.futures import ThreadPoolExecutor
 from numpy.typing import NDArray
 import numpy as np
 
@@ -38,8 +39,8 @@ def replace_by_first_label(x: NDArray) -> NDArray:
     """
 
     inn = [x[i] for i in range(x.shape[0])]
-    with multproc.Pool(None) as p:
-        z = p.map(_get_first_label, inn)
+    with ThreadPoolExecutor(max_workers=min(32, os.cpu_count() + 4)) as executor:
+        z = executor.map(_get_first_label, inn)
     del inn
     gc.collect()
     return np.asarray(z)
@@ -54,8 +55,8 @@ def replace_by_major_label(x: NDArray) -> NDArray:
     """
 
     inn = [x[i] for i in range(x.shape[0])]
-    with multproc.Pool(None) as p:
-        z = p.map(_get_first_label, inn)
+    with ThreadPoolExecutor(max_workers=min(32, os.cpu_count() + 4)) as executor:
+        z = executor.map(_get_first_label, inn)
     del inn
     gc.collect()
     return np.asarray(z)
