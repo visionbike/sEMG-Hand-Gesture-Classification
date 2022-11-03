@@ -87,5 +87,5 @@ def window_rolling(x: NDArray, ssize: int = 5, wsize: int = 52) -> NDArray:
     :return:
     """
 
-    z = np.dstack([x[i: x.shape[0] + i - wsize + 1: ssize] for i in range(wsize)])
+    z = np.dstack([x[i: i - wsize + 1 or None: ssize] for i in range(wsize)])
     return z
