@@ -314,5 +314,5 @@ class Nina1Processor(BaseProcessor):
             data = dict(emg=self.emgs[idxs].copy(),
                         lbl=self.lbls[idxs].copy())
         else:
-            raise ValueError(f"Invalid 'split' = {split}. Valid values: 'train'|'val'|'test'.")
+            raise ValueError(f"Expected values: 'train'|'val'|'test', but got 'split' = {split}.")
         return data

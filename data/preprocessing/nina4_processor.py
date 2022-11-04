@@ -260,7 +260,7 @@ class Nina4Processor(BaseProcessor):
             # because the processed samples are large, therefore multiprocessing is needed
             print('Butterworth filtering...')
             inn_emgs = [self.emgs[i] for i in range(self.emgs.shape[0])]
-            self.emgs = process_butter_band(self.emgs, lcut=20., hcut=40., fs=2000., order=4)
+            self.emgs = process_butter_band(inn_emgs, lcut=20., hcut=40., fs=2000., order=4)
             # release memory
             del inn_emgs
             gc.collect()
@@ -317,5 +317,5 @@ class Nina4Processor(BaseProcessor):
             data = dict(emg=self.emgs[idxs].copy(),
                         lbl=self.lbls[idxs].copy())
         else:
-            raise ValueError(f"Invalid 'split' = {split}. Valid values: 'train'|'val'|'test'.")
+            raise ValueError(f"Expected values: 'train'|'val'|'test', but got 'split' = {split}.")
         return data

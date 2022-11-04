@@ -44,16 +44,16 @@ class Nina5Processor(BaseProcessor):
             raise FileExistsError(f"Directory {path} does not exist.")
 
         if not isinstance(ssize, int):
-            raise ValueError(f"'ssize' requires Integer type, but got {type(ssize)}.")
+            raise ValueError(f"Expected 'ssize' Integer type, but got {type(ssize)}.")
 
         if not isinstance(wsize, int):
-            raise ValueError(f"'wsize' requires Integer type, but got {type(wsize)}.")
+            raise ValueError(f"Expected 'wsize' Integer type, but got {type(wsize)}.")
 
         if (ssize <= 0) or (ssize > wsize):
-            raise ValueError(f"'ssize' should be in range of (1, wsize, but got 'ssize' = {ssize}.")
+            raise ValueError(f"Expected 'ssize' in range of (1, wsize), but got 'ssize' = {ssize}.")
 
         if wsize <= 0:
-            raise ValueError(f"'wsize' should be larger than 0, but got 'wsize' = {wsize}.")
+            raise ValueError(f"Expected 'wsize' larger than 0, but got 'wsize' = {wsize}.")
 
         self.path = Path(path)
         self.use_imu = use_imu
@@ -347,5 +347,5 @@ class Nina5Processor(BaseProcessor):
                         imu=self.imus[idxs] if self.use_imu else self.imus,
                         lbl=self.lbls[idxs])
         else:
-            raise ValueError(f"Invalid 'split' = {split}. Valid values: 'train'|'val'|'test'.")
+            raise ValueError(f"Expected values: 'train'|'val'|'test', but got 'split' = {split}.")
         return data

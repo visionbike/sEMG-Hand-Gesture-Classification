@@ -1,7 +1,5 @@
-import gc
-import os
 import multiprocessing as multproc
-from concurrent.futures import ThreadPoolExecutor
+# from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from numpy.typing import NDArray
 from numba import njit
@@ -23,7 +21,7 @@ def process_butter_low(x: list, cutoff=2., fs=200., order=4) -> NDArray:
     """
 
     # with ThreadPoolExecutor(max_workers=min(32, os.cpu_count() + 4)) as executor:
-    #     z = [r for r in executor.map(partial(butter_low, cutoff=cutoff, fs=fs, order=order), inn)]
+    #     z = [r for r in executor.map(partial(butter_low, cutoff=cutoff, fs=fs, order=order), x)]
     num_workers = multproc.cpu_count() - 1
     num_samples = len(x)
     with multproc.Pool(processes=num_workers) as p:
@@ -42,8 +40,8 @@ def process_butter_high(x: list, cutoff=2., fs=200., order=4) -> NDArray:
     :return: the filtered signals.
     """
 
-    with ThreadPoolExecutor(max_workers=min(32, os.cpu_count() + 4)) as executor:
-         z = [r for r in executor.map(partial(butter_high, cutoff=cutoff, fs=fs, order=order), inn)]
+    # with ThreadPoolExecutor(max_workers=min(32, os.cpu_count() + 4)) as executor:
+    #      z = [r for r in executor.map(partial(butter_high, cutoff=cutoff, fs=fs, order=order), x)]
     num_workers = multproc.cpu_count() - 1
     num_samples = len(x)
     with multproc.Pool(processes=num_workers) as p:
@@ -63,12 +61,12 @@ def process_butter_band(x: list, lcut=5., hcut=99., fs=200., order=4) -> NDArray
     :return: the filtered signals.
     """
 
-    with ThreadPoolExecutor(max_workers=min(32, os.cpu_count() + 4)) as executor:
-        z = list(executor.map(partial(butter_band, lcut=lcut, hcut=hcut, fs=fs, order=order), x))
-    #num_workers = multproc.cpu_count() - 1
-    #num_samples = len(x)
-    #with multproc.Pool(processes=num_workers) as p:
-    #    z = list(p.imap(partial(butter_band, lcut=lcut, hcut=hcut, fs=fs, order=order), x, chunksize=num_samples // num_workers))
+    # with ThreadPoolExecutor(max_workers=min(32, os.cpu_count() + 4)) as executor:
+    #     z = list(executor.map(partial(butter_band, lcut=lcut, hcut=hcut, fs=fs, order=order), x))
+    num_workers = multproc.cpu_count() - 1
+    num_samples = len(x)
+    with multproc.Pool(processes=num_workers) as p:
+        z = list(p.imap(partial(butter_band, lcut=lcut, hcut=hcut, fs=fs, order=order), x, chunksize=num_samples // num_workers))
     return np.asarray(z)
 
 
