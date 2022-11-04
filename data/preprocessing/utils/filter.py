@@ -1,5 +1,6 @@
 import gc
 import os
+import multiprocessing as multproc
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from numpy.typing import NDArray
@@ -10,7 +11,7 @@ import scipy.signal as signal
 __all__ = ['process_butter_low', 'process_butter_high', 'process_butter_band', 'butter_low', 'butter_high', 'butter_band', 'moving_average']
 
 
-def process_butter_low(x: NDArray, cutoff=2., fs=200., order=4) -> NDArray:
+def process_butter_low(x: list, cutoff=2., fs=200., order=4) -> NDArray:
     """
     Multiprocessing function to process butterworth lowpass filter for multiple signals.
 
@@ -21,15 +22,16 @@ def process_butter_low(x: NDArray, cutoff=2., fs=200., order=4) -> NDArray:
     :return: the filtered signals.
     """
 
-    inn = [x[i] for i in range(x.shape[0])]
-    with ThreadPoolExecutor(max_workers=min(32, os.cpu_count() + 4)) as executor:
-        z = [r for r in executor.map(partial(butter_low, cutoff=cutoff, fs=fs, order=order), inn)]
-    del inn
-    gc.collect()
+    # with ThreadPoolExecutor(max_workers=min(32, os.cpu_count() + 4)) as executor:
+    #     z = [r for r in executor.map(partial(butter_low, cutoff=cutoff, fs=fs, order=order), inn)]
+    num_workers = multproc.cpu_count() - 1
+    num_samples = len(x)
+    with multproc.Pool(processes=num_workers) as p:
+        z = list(p.imap(partial(butter_low, cutoff=cutoff, fs=fs, order=order), x, chunksize=num_samples // num_workers))
     return np.asarray(z)
 
 
-def process_butter_high(x: NDArray, cutoff=2., fs=200., order=4) -> NDArray:
+def process_butter_high(x: list, cutoff=2., fs=200., order=4) -> NDArray:
     """
     Multiprocessing function to process butterworth highpass filter for multiple signals.
 
@@ -40,15 +42,16 @@ def process_butter_high(x: NDArray, cutoff=2., fs=200., order=4) -> NDArray:
     :return: the filtered signals.
     """
 
-    inn = [x[i] for i in range(x.shape[0])]
-    with ThreadPoolExecutor(max_workers=min(32, os.cpu_count() + 4)) as executor:
-        z = [r for r in executor.map(partial(butter_high, cutoff=cutoff, fs=fs, order=order), inn)]
-    del inn
-    gc.collect()
+    # with ThreadPoolExecutor(max_workers=min(32, os.cpu_count() + 4)) as executor:
+    #     z = [r for r in executor.map(partial(butter_high, cutoff=cutoff, fs=fs, order=order), inn)]
+    num_workers = multproc.cpu_count() - 1
+    num_samples = len(x)
+    with multproc.Pool(processes=num_workers) as p:
+        z = list(p.imap(partial(butter_high, cutoff=cutoff, fs=fs, order=order), x, chunksize=num_samples // num_workers))
     return np.asarray(z)
 
 
-def process_butter_band(x: NDArray, lcut=5., hcut=99., fs=200., order=4) -> NDArray:
+def process_butter_band(x: list, lcut=5., hcut=99., fs=200., order=4) -> NDArray:
     """
     Multiprocessing function to process butterworth bandpass filter for multiple signals.
 
@@ -60,11 +63,12 @@ def process_butter_band(x: NDArray, lcut=5., hcut=99., fs=200., order=4) -> NDAr
     :return: the filtered signals.
     """
 
-    inn = [x[i] for i in range(x.shape[0])]
-    with ThreadPoolExecutor(max_workers=min(32, os.cpu_count() + 4)) as executor:
-        z = [r for r in executor.map(partial(butter_low, lcut=lcut, hcut=hcut, fs=fs, order=order), inn)]
-    del inn
-    gc.collect()
+    # with ThreadPoolExecutor(max_workers=min(32, os.cpu_count() + 4)) as executor:
+    #     z = [r for r in executor.map(partial(butter_low, lcut=lcut, hcut=hcut, fs=fs, order=order), inn)]
+    num_workers = multproc.cpu_count() - 1
+    num_samples = len(x)
+    with multproc.Pool(processes=num_workers) as p:
+        z = list(p.imap(partial(butter_band, lcut=lcut, hcut=hcut, fs=fs, order=order), x, chunksize=num_samples // num_workers))
     return np.asarray(z)
 
 

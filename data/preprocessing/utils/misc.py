@@ -1,5 +1,5 @@
-import gc
 import os
+import multiprocessing as multproc
 from concurrent.futures import ThreadPoolExecutor
 from numpy.typing import NDArray
 import numpy as np
@@ -30,35 +30,37 @@ def _get_major_label(x: NDArray) -> NDArray:
     return max(unique.keys())
 
 
-def replace_by_first_label(x: NDArray) -> NDArray:
+def replace_by_first_label(x: list) -> NDArray:
     """
     Multiprocessing function to process butterworth filter for multiple signals.
 
-    :param x: the input label array.
+    :param x: the input label list.
     :return: the first labeling array.
     """
 
-    inn = [x[i] for i in range(x.shape[0])]
-    with ThreadPoolExecutor(max_workers=min(32, os.cpu_count() + 4)) as executor:
-        z = [r for r in executor.map(_get_first_label, inn)]
-    del inn
-    gc.collect()
+    # with ThreadPoolExecutor(max_workers=min(32, os.cpu_count() + 4)) as executor:
+    #     z = [r for r in executor.map(_get_first_label, x)]
+    num_workers = multproc.cpu_count() - 1
+    num_samples = len(x)
+    with multproc.Pool(processes=num_workers) as p:
+        z = list(p.imap(_get_first_label, x, chunksize=num_samples // num_workers))
     return np.asarray(z)
 
 
-def replace_by_major_label(x: NDArray) -> NDArray:
+def replace_by_major_label(x: list) -> NDArray:
     """
     Multiprocessing function to process butterworth filter for multiple signals.
 
-    :param x: the input label array.
-    :return: the first labeling array.
+    :param x: the input label list.
+    :return: the major labeling array.
     """
 
-    inn = [x[i] for i in range(x.shape[0])]
-    with ThreadPoolExecutor(max_workers=min(32, os.cpu_count() + 4)) as executor:
-        z = [r for r in executor.map(_get_major_label, inn)]
-    del inn
-    gc.collect()
+    # with ThreadPoolExecutor(max_workers=min(32, os.cpu_count() + 4)) as executor:
+    #     z = [r for r in executor.map(_get_major_label, list)]
+    num_workers = multproc.cpu_count() - 1
+    num_samples = len(x)
+    with multproc.Pool(processes=num_workers) as p:
+        z = list(p.imap(_get_major_label, x, chunksize=num_samples // num_workers))
     return np.asarray(z)
 
 

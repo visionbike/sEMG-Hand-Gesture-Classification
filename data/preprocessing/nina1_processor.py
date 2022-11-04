@@ -64,7 +64,6 @@ class Nina1Processor(BaseProcessor):
         super(Nina1Processor, self).__init__()
 
         self.emgs, self.lbls, self.reps = None, None, None
-        self.pemgs, self.plbls, self.preps = None, None, None
 
         self.load_data()
 
@@ -143,35 +142,33 @@ class Nina1Processor(BaseProcessor):
         """
 
         print('### Processing data...')
-        self.pemgs = self.emgs.copy()
         if self.use_rectify:
             print('Rectifying...')
-            self.pemgs = [np.abs(emg) for emg in self.pemgs]
+            self.emgs = [np.abs(emg) for emg in self.emgs]
         if self.use_butter:
             print('Butterworth filtering...')
-            self.pemgs = [butter_high(emg, cutoff=2., fs=100., order=4) for emg in self.pemgs]
+            self.emgs = [butter_high(emg, cutoff=2., fs=100., order=4) for emg in self.emgs]
 
         print('### Rolling data...')
-        self.pemgs = [window_rolling(emg, self.step_size, self.window_size) for emg in self.pemgs]
-        self.plbls = [window_rolling(lab, self.step_size, self.window_size) for lab in self.lbls]
-        self.preps = [window_rolling(rep, self.step_size, self.window_size) for rep in self.reps]
+        self.emgs = [window_rolling(emg, self.step_size, self.window_size) for emg in self.emgs]
+        self.lbls = [window_rolling(lab, self.step_size, self.window_size) for lab in self.lbls]
+        self.reps = [window_rolling(rep, self.step_size, self.window_size) for rep in self.reps]
         # reshape the data to have the axes in the proper order
-        self.pemgs = np.moveaxis(np.concatenate(self.pemgs, axis=0), 2, 1)
-        self.plbls = np.moveaxis(np.concatenate(self.plbls, axis=0), 2, 1)[..., -1]
-        self.preps = np.moveaxis(np.concatenate(self.preps, axis=0), 2, 1)[..., -1]
+        self.emgs = np.moveaxis(np.concatenate(self.emgs, axis=0), 2, 1)
+        self.lbls = np.moveaxis(np.concatenate(self.lbls, axis=0), 2, 1)[..., -1]
+        self.reps = np.moveaxis(np.concatenate(self.reps, axis=0), 2, 1)[..., -1]
 
         print('### Removing windows that contain multiple repetitions...')
         # split by repetition, but do not want any data leaks
         # sim ply drop any window that has more than one repetition in it
         no_leaks = np.array([
             i
-            for i in range(self.preps.shape[0])
-            if np.unique(self.preps[i]).shape[0] == 1
+            for i in range(self.reps.shape[0])
+            if np.unique(self.reps[i]).shape[0] == 1
         ])
-        self.pemgs = self.pemgs[no_leaks, :, :]
-        self.plbls = self.plbls[no_leaks, :]
-        self.preps = self.preps[no_leaks, :]
-
+        self.emgs = self.emgs[no_leaks, :, :]
+        self.lbls = self.lbls[no_leaks, :]
+        self.reps = self.reps[no_leaks, :]
         # release memory
         del no_leaks
         gc.collect()
@@ -179,23 +176,28 @@ class Nina1Processor(BaseProcessor):
         print('### Replacing by first/major label appearance...')
         # next we want to make sure there aren't multiple labels
         # do this using the first class that appears in a window
+        inn_lbls = [self.lbls[i] for i in range(self.lbls.shape[0])]
+        inn_reps = [self.reps[i] for i in range(self.reps.shape[0])]
         if self.use_first_appearance:
-            self.plbls = replace_by_first_label(self.plbls)
-            self.preps = replace_by_first_label(self.preps)
+            self.lbls = replace_by_first_label(inn_lbls)
+            self.reps = replace_by_first_label(inn_reps)
         else:
-            self.plbls = replace_by_major_label(self.plbls)
-            self.preps = replace_by_major_label(self.preps)
+            self.lbls = replace_by_major_label(inn_lbls)
+            self.reps = replace_by_major_label(inn_reps)
+        # release memory
+        del inn_lbls, inn_reps
+        gc.collect()
 
         print('### Post-processing...')
         print('Quantifying to float16...')
-        self.pemgs = self.pemgs.astype(np.float16)
+        self.emgs = self.emgs.astype(np.float16)
         print('Processing label...')
         if not self.use_rest_label:
             print(f"'use_rest_label' = {self.use_rest_label}. Removing 'rest' label data...")
-            self.pemgs = self.pemgs[np.where(self.plbls != 0)[0]]
-            self.preps = self.preps[np.where(self.plbls != 0)[0]]
-            self.plbls = self.plbls[np.where(self.plbls != 0)[0]]
-            self.plbls -= 1
+            self.emgs = self.emgs[np.where(self.lbls != 0)[0]]
+            self.reps = self.reps[np.where(self.lbls != 0)[0]]
+            self.lbls = self.lbls[np.where(self.lbls != 0)[0]]
+            self.lbls -= 1
         print('Done!')
 
     def _process_data_v2(self) -> None:
@@ -211,26 +213,25 @@ class Nina1Processor(BaseProcessor):
         """
 
         print('### Rolling data...')
-        self.pemgs = [window_rolling(emg, self.step_size, self.window_size) for emg in self.emgs]
-        self.plbls = [window_rolling(lab, self.step_size, self.window_size) for lab in self.lbls]
-        self.preps = [window_rolling(rep, self.step_size, self.window_size) for rep in self.reps]
+        self.emgs = [window_rolling(emg, self.step_size, self.window_size) for emg in self.emgs]
+        self.lbls = [window_rolling(lab, self.step_size, self.window_size) for lab in self.lbls]
+        self.reps = [window_rolling(rep, self.step_size, self.window_size) for rep in self.reps]
         # reshape the data to have the axes in the proper order
-        self.pemgs = np.moveaxis(np.concatenate(self.pemgs, axis=0), 2, 1)
-        self.plbls = np.moveaxis(np.concatenate(self.plbls, axis=0), 2, 1)[..., -1]
-        self.preps = np.moveaxis(np.concatenate(self.preps, axis=0), 2, 1)[..., -1]
+        self.emgs = np.moveaxis(np.concatenate(self.emgs, axis=0), 2, 1)
+        self.lbls = np.moveaxis(np.concatenate(self.lbls, axis=0), 2, 1)[..., -1]
+        self.reps = np.moveaxis(np.concatenate(self.reps, axis=0), 2, 1)[..., -1]
 
         print('### Removing windows that contain multiple repetitions...')
         # split by repetition, but do not want any data leaks
         # simply drop any window that has more than one repetition in it
         no_leaks = np.array([
             i
-            for i in range(self.preps.shape[0])
-            if np.unique(self.preps[i]).shape[0] == 1
+            for i in range(self.reps.shape[0])
+            if np.unique(self.reps[i]).shape[0] == 1
         ])
-        self.pemgs = self.pemgs[no_leaks, :, :]
-        self.plbls = self.plbls[no_leaks, :]
-        self.preps = self.preps[no_leaks, :]
-
+        self.emgs = self.emgs[no_leaks, :, :]
+        self.lbls = self.lbls[no_leaks, :]
+        self.reps = self.reps[no_leaks, :]
         # release memory
         del no_leaks
         gc.collect()
@@ -238,33 +239,41 @@ class Nina1Processor(BaseProcessor):
         print('### Replacing by first/major appearance...')
         # next we want to make sure there aren't multiple labels
         # do this using the first/major appearance in a window
+        inn_lbls = [self.lbls[i] for i in range(self.lbls.shape[0])]
+        inn_reps = [self.reps[i] for i in range(self.reps.shape[0])]
         if self.use_first_appearance:
-            self.plbls = replace_by_first_label(self.plbls)
-            self.preps = replace_by_first_label(self.preps)
+            self.lbls = replace_by_first_label(inn_lbls)
+            self.reps = replace_by_first_label(inn_reps)
         else:
-            self.plbls = replace_by_major_label(self.plbls)
-            self.preps = replace_by_major_label(self.preps)
+            self.lbls = replace_by_major_label(inn_lbls)
+            self.reps = replace_by_major_label(inn_reps)
+        inn_lbls = [self.lbls[i] for i in range(self.lbls.shape[0])]
+        inn_reps = [self.reps[i] for i in range(self.reps.shape[0])]
 
         print('### Processing data...')
         if self.use_rectify:
             print('Rectifying...')
-            self.pemgs = np.abs(self.pemgs)
+            self.emgs = np.abs(self.emgs)
         # return self.processed_emgs
         if self.use_butter:
             # because the processed samples are large, therefore multiprocessing is needed
             print('Butterworth filtering...')
-            self.pemgs = process_butter_high(self.pemgs, cutoff=2., fs=100., order=4)
+            inn_emgs = [self.emgs[i] for i in range(self.emgs.shape[0])]
+            self.emgs = process_butter_high(inn_emgs, cutoff=2., fs=100., order=4)
+            # release emgs
+            del inn_emgs
+            gc.collect()
 
         print('### Post processing...')
         print('Quantifying to float16...')
-        self.pemgs = self.pemgs.astype(np.float16)
+        self.emgs = self.emgs.astype(np.float16)
         print('Processing label...')
         if not self.use_rest_label:
             print(f"'use_rest_label' = {self.use_rest_label}. Removing 'rest' label data...")
-            self.pemgs = self.pemgs[np.where(self.plbls != 0)[0]]
-            self.preps = self.preps[np.where(self.plbls != 0)[0]]
-            self.plbls = self.plbls[np.where(self.plbls != 0)[0]]
-            self.plbls -= 1
+            self.emgs = self.emgs[np.where(self.lbls != 0)[0]]
+            self.reps = self.reps[np.where(self.lbls != 0)[0]]
+            self.lbls = self.lbls[np.where(self.lbls != 0)[0]]
+            self.lbls -= 1
         print('Done!')
 
     def process_data(self, ver: int = 1) -> None:
@@ -291,19 +300,19 @@ class Nina1Processor(BaseProcessor):
         print(f"'split' = {split}. Splitting datasets by repetitions...")
         if split == 'train':
             reps = [1, 4, 6, 7, 8, 9]
-            idxs = np.where(np.isin(self.preps, np.array(reps)))
-            data = dict(emg=self.pemgs[idxs].copy(),
-                        lbl=self.plbls[idxs].copy())
+            idxs = np.where(np.isin(self.reps, np.array(reps)))
+            data = dict(emg=self.emgs[idxs].copy(),
+                        lbl=self.lbls[idxs].copy())
         elif split == 'test':
             reps = [2, 5, 10]
-            idxs = np.where(np.isin(self.preps, np.array(reps)))
-            data = dict(emg=self.pemgs[idxs].copy(),
-                        lbl=self.plbls[idxs].copy())
+            idxs = np.where(np.isin(self.reps, np.array(reps)))
+            data = dict(emg=self.emgs[idxs].copy(),
+                        lbl=self.lbls[idxs].copy())
         elif split == 'val':
             reps = [3]
-            idxs = np.where(np.isin(self.preps, np.array(reps)))
-            data = dict(emg=self.pemgs[idxs].copy(),
-                        lbl=self.plbls[idxs].copy())
+            idxs = np.where(np.isin(self.reps, np.array(reps)))
+            data = dict(emg=self.emgs[idxs].copy(),
+                        lbl=self.lbls[idxs].copy())
         else:
             raise ValueError(f"Invalid 'split' = {split}. Valid values: 'train'|'val'|'test'.")
         return data
