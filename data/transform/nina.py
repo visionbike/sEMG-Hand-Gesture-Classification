@@ -5,7 +5,7 @@ import numpy as np
 import torch
 from data.preprocessing.utils import *
 
-__all__ = ['NinaCompose', 'NinaToTensor', 'NinaMovingAverage', 'NinaRandomSNR']
+__all__ = ['NinaCompose', 'NinaToTensor', 'NinaMovingAverage', 'NinaRandomSNR', 'NinaTranspose']
 
 
 class NinaCompose:
@@ -99,6 +99,21 @@ class NinaRandomSNR:
         snr = random.choice(self.rlist)
         x = self._add_noise_snr(x, snr)
         return x, y
+
+
+class NinaTranspose:
+    """
+    Transpose class for NinaPro class
+    """
+
+    def __call__(self, x: NDArray, y: NDArray):
+        """
+
+        :param x: the input signal.
+        :param y: the input label.
+        :return: the transformed signal and its label.
+        """
+        return x.T, y
 
 
 class NinaMovingAverage:

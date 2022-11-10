@@ -2,7 +2,6 @@ import multiprocessing as multproc
 # from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from numpy.typing import NDArray
-from numba import njit
 import numpy as np
 import scipy.signal as signal
 
@@ -126,7 +125,6 @@ def butter_band(x: NDArray, lcut: float = 2., hcut: float = 5., fs: float = 200.
     return z
 
 
-@njit
 def moving_average(x: NDArray, ksize: int = 3) -> NDArray:
     """
     Moving average filter

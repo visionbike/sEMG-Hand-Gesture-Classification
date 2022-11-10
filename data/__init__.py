@@ -222,15 +222,15 @@ class Nina5Data(pl.LightningDataModule):
             data_val = np.load(str(self.path / 'val.npz'), allow_pickle=True)
             data_test = np.load(str(self.path / 'test.npz'), allow_pickle=True)
             #
-            self.train = Nina5Dataset(data_train, self.kwargs)
-            self.val = Nina5Dataset(data_val, self.kwargs)
-            self.test = Nina5Dataset(data_test, self.kwargs)
+            self.train = Nina5Dataset(data_train, **self.kwargs)
+            self.val = Nina5Dataset(data_val, **self.kwargs)
+            self.test = Nina5Dataset(data_test, **self.kwargs)
             #
             del data_train, data_val, data_test
             gc.collect()
         elif stage == 'test':
             data_test = np.load(str(self.path / 'test.npz'), allow_pickle=True)
-            self.test = Nina5Dataset(data_test, self.kwargs)
+            self.test = Nina5Dataset(data_test, **self.kwargs)
             #
             del data_test
             gc.collect()

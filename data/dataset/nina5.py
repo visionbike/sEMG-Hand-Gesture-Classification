@@ -1,5 +1,6 @@
 import gc
 import numpy as np
+import torch
 from numpy.typing import NDArray
 from torch.utils.data import Dataset
 from data.transform import *
@@ -32,7 +33,7 @@ class Nina5Dataset(Dataset):
             self.data = data['emg'].copy()
         else:
             self.data = np.concatenate([data['emg'].copy(), data['imu'].copy()], axis=-1)
-        self.lbls = self.data['lbl'].copy()
+        self.lbls = data['lbl'].copy()
 
         # release memory
         del data
@@ -44,7 +45,7 @@ class Nina5Dataset(Dataset):
             transforms += [NinaRandomSNR(use_rest_label)]
         if msize is not None:
             transforms += [NinaMovingAverage(msize)]
-        transforms += [NinaToTensor()]
+        c
         self.transforms = NinaCompose(transforms)
 
     def __len__(self):

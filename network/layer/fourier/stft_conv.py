@@ -72,6 +72,9 @@ class StftConv(nn.Module):
                 Default: 'complex'.
         """
 
+        if feature_type not in ['complex', 'magnitude', 'phase']:
+            raise ValueError(f"Expected values: 'complex', 'magnitude', 'phase', but got 'feature_type' = {feature_type}.")
+
         super(StftConv, self).__init__()
 
         # trying to make the default setting same as librosa

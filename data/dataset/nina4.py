@@ -28,7 +28,7 @@ class Nina4Dataset(Dataset):
 
         # load data
         self.data = data['emg'].copy()
-        self.lbls = self.data['lbl'].copy()
+        self.lbls = data['lbl'].copy()
 
         # release memory
         del data
@@ -40,7 +40,7 @@ class Nina4Dataset(Dataset):
             transforms += [NinaRandomSNR(use_rest_label)]
         if msize is not None:
             transforms += [NinaMovingAverage(msize)]
-        transforms += [NinaToTensor()]
+        transforms += [NinaTranspose(), NinaToTensor()]
         self.transforms = NinaCompose(transforms)
 
     def __len__(self):
