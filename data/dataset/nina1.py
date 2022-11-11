@@ -15,7 +15,7 @@ class Nina1Dataset(Dataset):
                  data: NDArray,
                  msize: [None | int] = 7,
                  use_augment: bool = False,
-                 use_rest_label: bool = True):
+                 use_rest_label: bool = True, **kwargs):
         """
 
         :param data: the Nina DB1 data, include signal and its label.

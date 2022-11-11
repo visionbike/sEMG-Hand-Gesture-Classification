@@ -1,9 +1,10 @@
+from typing import Union, Optional
 import multiprocessing as multproc
 # from concurrent.futures import ThreadPoolExecutor
 from numpy.typing import NDArray
 import numpy as np
 
-__all__ = ['replace_by_first_label', 'replace_by_major_label', 'compute_class_weights', 'window_rolling']
+__all__ = ['replace_by_first_label', 'replace_by_major_label', 'compute_class_weights', 'get_class_weights', 'window_rolling']
 
 
 def _get_first_label(x: NDArray) -> NDArray:
@@ -77,6 +78,31 @@ def compute_class_weights(x: NDArray) -> dict:
     props_min = min(props.values())
     props_norm = {k: v / props_min for k, v in unique.items()}
     return props_norm
+
+
+def get_class_weights(num_classes: int, use_weight: bool, based_weights: Optional[Union[str, float, int]]) -> Optional[NDArray]:
+    """
+    Get the clas weights form configuration.
+
+    :param num_classes: the number of classes.
+    :param use_weight: whether to apply class weights or not.
+    :param based_weights: the weight file path or weight array.
+        If 'base_weights' is *. npy file path, load the class weights from the file.
+        If 'base_weights' is float or integer value, return a list of these values.
+        If 'base_weights' is None, return a list of ones.
+    :return: the class weight array or None.
+    """
+
+    if use_weight:
+        if isinstance(based_weights, str):
+            weights = np.load(based_weights).tolist()
+        elif isinstance(based_weights, (float, int)):
+            weights = np.full(num_classes, based_weights).tolist()
+        else:
+            weights = np.ones(num_classes).tolist()
+    else:
+        weights = None
+    return weights
 
 
 def window_rolling(x: NDArray, ssize: int = 5, wsize: int = 52) -> NDArray:

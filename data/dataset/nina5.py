@@ -17,7 +17,7 @@ class Nina5Dataset(Dataset):
                  data: NDArray,
                  msize: [None | int] = 15,
                  use_augment: bool = False,
-                 use_rest_label: bool = True):
+                 use_rest_label: bool = True, **kwargs):
         """
 
         :param data: the Nina DB5 data, include signal and its label.
@@ -45,7 +45,7 @@ class Nina5Dataset(Dataset):
             transforms += [NinaRandomSNR(use_rest_label)]
         if msize is not None:
             transforms += [NinaMovingAverage(msize)]
-        c
+        transforms += [NinaTranspose(), NinaToTensor()]
         self.transforms = NinaCompose(transforms)
 
     def __len__(self):
