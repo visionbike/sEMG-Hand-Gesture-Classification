@@ -26,10 +26,10 @@ class Baseline(nn.Module):
                  act_layer: nn.Module = nn.Identity,
                  att_layer: nn.Module = nn.Identity,
                  drop_rate: Optional[float] = 0.3,
-                 att_kwargs: Optional[dict] = None):
+                 att_kwargs: Optional[dict] = None,
+                 **kwargs: dict):
         """
 
-        :param att_kwargs:
         :param in_channels:the number of the input tensor channels.
         :param mid_channels: the number of the intermediate layer channels.
         :param in_dims: the number of feature dims.
@@ -39,6 +39,7 @@ class Baseline(nn.Module):
         :param att_layer: the attention layer. Default: `nn.Identity`.
         :param drop_rate: the dropout ratio. Default: 0.3.
         :param att_kwargs: the attention argument dict. Default: None.
+        :param kwargs: argument dict.
         """
 
         if att_kwargs is None:

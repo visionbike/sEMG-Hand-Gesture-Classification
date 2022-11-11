@@ -198,7 +198,7 @@ class FFConv(nn.Module):
                  out_channels: int,
                  ratio_gin: float,
                  ratio_gout: float,
-                 kernel_size: int,
+                 ksize: int,
                  stride: int = 1,
                  padding: int = 0,
                  groups: int = 1,
@@ -215,7 +215,7 @@ class FFConv(nn.Module):
         :param out_channels: the number of channels in output tensor.
         :param ratio_gin: the ratio of feature channels allocated to the global part.
         :param ratio_gout: the ratio of global part for output tensor.
-        :param kernel_size: the kernel size.
+        :param ksize: the kernel size.
         :param stride: the convolution stride. Default: 1.
         :param padding: the convolution padding. Default: 0.
         :param groups: the groups. Default: 1.
@@ -247,11 +247,11 @@ class FFConv(nn.Module):
         self.out_cl = out_channels - self.out_cg
 
         module = nn.Identity if (self.in_cl == 0 or self.out_cl == 0) else nn.Conv2d
-        self.conv_l2l = module(self.in_cl, self.out_cl, kernel_size, stride, padding, groups=groups, bias=True)
+        self.conv_l2l = module(self.in_cl, self.out_cl, ksize, stride, padding, groups=groups, bias=True)
         module = nn.Identity if (self.in_cl == 0 or self.out_cg == 0) else nn.Conv2d
-        self.conv_l2g = module(self.in_cl, self.out_cg, kernel_size, stride, padding, groups=groups, bias=True)
+        self.conv_l2g = module(self.in_cl, self.out_cg, ksize, stride, padding, groups=groups, bias=True)
         module = nn.Identity if (self.in_cg == 0 or self.out_cl == 0) else nn.Conv2d
-        self.conv_g2l = module(self.in_cg, self.out_cl, kernel_size, stride, padding, groups=groups, bias=True)
+        self.conv_g2l = module(self.in_cg, self.out_cl, ksize, stride, padding, groups=groups, bias=True)
         module = nn.Identity if (self.in_cg == 0 or self.out_cg == 0) else SpectralTransform
         self.conv_g2g = module(self.in_cg, in_height, in_width, self.out_cg, stride, groups if groups == 1 else (groups // 2), enable_lfu, fft_norm, norm_layer, act_layer)
 
