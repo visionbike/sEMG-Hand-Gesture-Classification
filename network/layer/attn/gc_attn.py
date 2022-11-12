@@ -16,7 +16,7 @@ class GlobalContextAttention(nn.Module):
     - https://github.com/xvjiarui/GCNet/blob/master/mmdet/ops/gcb/context_block.py
     """
 
-    def __init__(self, in_channels: int, ratio: float = 1., fusion_type='add', **kwargs):
+    def __init__(self, in_channels: int, ratio: float = 1., fusion_type: str = 'add', **kwargs):
         """
 
         :param in_channels: the number of channels in input tensor.
