@@ -16,15 +16,15 @@ class Nina1Processor(BaseProcessor):
     The preprocessing class for NinaPro DB4 data.
     """
 
-    BASE_LABEL_IDS = dict(a=1, b=13, c=3)
+    BASE_LABEL_IDS = dict(a=1, b=13, c=30)
     NUM_SUBJECTS = 27
 
     def __init__(self,
                  path: str,
                  use_butter: bool = True,
                  use_rectify: bool = True,
-                 ssize: int = 5,
-                 wsize: int = 52,
+                 ssize: int = 2,
+                 wsize: int = 26,
                  use_first_appearance: bool = False,
                  use_rest_label: bool = True):
         """
@@ -32,8 +32,8 @@ class Nina1Processor(BaseProcessor):
         :param path: the input data path.
         :param use_butter: whether to use butterworth filter. Default: True.
         :param use_rectify: whether to use rectifying. Default: True.
-        :param ssize: step size for window rolling. Default: 5.
-        :param wsize: window size for window rolling. Default: 52.
+        :param ssize: step size for window rolling. Default: 2.
+        :param wsize: window size for window rolling. Default: 26.
         :param use_first_appearance: if True, using first appearance strategy; otherwise, using major appearance strategy. Default: True.
         :param use_rest_label: whether to use the 'rest' label. Default: True.
         """
@@ -147,7 +147,7 @@ class Nina1Processor(BaseProcessor):
             self.emgs = [np.abs(emg) for emg in self.emgs]
         if self.use_butter:
             print('Butterworth filtering...')
-            self.emgs = [butter_high(emg, cutoff=2., fs=100., order=4) for emg in self.emgs]
+            self.emgs = [butter_high(emg, cutoff=2., fs=200., order=3) for emg in self.emgs]
 
         print('### Rolling data...')
         self.emgs = [window_rolling(emg, self.step_size, self.window_size) for emg in self.emgs]
@@ -303,13 +303,13 @@ class Nina1Processor(BaseProcessor):
             idxs = np.where(np.isin(self.reps, np.array(reps)))
             data = dict(emg=self.emgs[idxs].copy(),
                         lbl=self.lbls[idxs].copy())
-        elif split == 'test':
-            reps = [2, 5, 10]
+        elif split == 'val':
+            reps = [3]
             idxs = np.where(np.isin(self.reps, np.array(reps)))
             data = dict(emg=self.emgs[idxs].copy(),
                         lbl=self.lbls[idxs].copy())
-        elif split == 'val':
-            reps = [3]
+        elif split == 'test':
+            reps = [2, 5, 10]
             idxs = np.where(np.isin(self.reps, np.array(reps)))
             data = dict(emg=self.emgs[idxs].copy(),
                         lbl=self.lbls[idxs].copy())

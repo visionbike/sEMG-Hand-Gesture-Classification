@@ -36,9 +36,9 @@ class Trainer(pl.LightningModule):
         self.criterion = get_loss(**criterion_kwargs)
         self.optimizer_kwargs = optimizer_kwargs
         self.scheduler_kwargs = scheduler_kwargs
-        self.metric_train = get_metrics(postfix='_train', **metric_kwargs).clone()
-        self.metric_val = get_metrics(postfix='_val', **metric_kwargs).clone()
-        self.metric_test = get_metrics(postfix='_test', **metric_kwargs).clone()
+        self.metric_train = get_metrics(postfix='/train', **metric_kwargs).clone()
+        self.metric_val = get_metrics(postfix='/val', **metric_kwargs).clone()
+        self.metric_test = get_metrics(postfix='/test', **metric_kwargs).clone()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         z = self.network(x)

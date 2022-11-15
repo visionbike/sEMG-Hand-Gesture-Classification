@@ -223,6 +223,8 @@ class Nina5Data(pl.LightningDataModule):
             data_test = np.load(str(self.path / 'test.npz'), allow_pickle=True)
             #
             self.train = Nina5Dataset(data_train, **self.kwargs)
+            if self.kwargs['use_augment'] is True:
+                self.kwargs['use_augment'] = False
             self.val = Nina5Dataset(data_val, **self.kwargs)
             self.test = Nina5Dataset(data_test, **self.kwargs)
             #

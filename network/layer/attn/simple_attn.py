@@ -43,13 +43,13 @@ class SimpleAttention(nn.Module):
             z = x.view(b, c, x.size(2) * x.size(3))     # (B, C, F, T) -> (B, C, F*T)
 
         # (B, C, N) -> (B, N, C)
-        z = z.permute(0, 2, 1).contiguous()
+        # z = z.permute(0, 2, 1).contiguous()
         # get attention probability along sample-axis
-        att_weights = self.linear(z)
-        att_score = torch.softmax(att_weights, dim=-1)
+        z = self.linear(z)
+        att_score = torch.softmax(z, dim=-1)
 
         # (B, N, C) -> (B, C, N)
-        att_score = att_score.permute(0, 2, 1).contiguous()
+        # att_score = att_score.permute(0, 2, 1).contiguous()
         if x.dim() == 4:
             att_score = att_score.view(b, c, x.size(2), x.size(3))
 

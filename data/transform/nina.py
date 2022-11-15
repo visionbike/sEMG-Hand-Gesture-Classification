@@ -97,7 +97,11 @@ class NinaRandomSNR:
 
         # get random signal-to-noise factor
         snr = random.choice(self.rlist)
-        x = self._add_noise_snr(x, snr)
+        if self.use_rest_label:
+            if y != 0:
+                x = self._add_noise_snr(x, snr)
+        else:
+            x = self._add_noise_snr(x, snr)
         return x, y
 
 

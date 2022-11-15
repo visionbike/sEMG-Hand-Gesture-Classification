@@ -29,6 +29,7 @@ class Nina5Dataset(Dataset):
         super(Nina5Dataset, self).__init__()
 
         # load data
+        print(data)
         if not data['imu']:
             self.data = data['emg'].copy()
         else:

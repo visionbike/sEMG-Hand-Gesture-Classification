@@ -16,15 +16,15 @@ class Nina4Processor(BaseProcessor):
     The preprocessing class for NinaPro DB4 data.
     """
 
-    BASE_LABEL_IDS = dict(a=1, b=13, c=3)
+    BASE_LABEL_IDS = dict(a=1, b=13, c=30)
     NUM_SUBJECTS = 10
 
     def __init__(self,
                  path: str,
                  use_butter: bool = True,
                  use_rectify: bool = True,
-                 ssize: int = 5,
-                 wsize: int = 52,
+                 ssize: int = 50,
+                 wsize: int = 520,
                  use_first_appearance: bool = False,
                  use_rest_label: bool = True):
         """
@@ -147,7 +147,7 @@ class Nina4Processor(BaseProcessor):
             self.emgs = [np.abs(emg) for emg in self.emgs]
         if self.use_butter:
             print('Butterworth filtering...')
-            self.emgs = [butter_band(emg, lcut=20., hcut=40., fs=2000., order=4) for emg in self.emgs]
+            self.emgs = [butter_high(emg, cutoff=2., fs=200., order=3) for emg in self.emgs]
 
         print('### Rolling data...')
         self.emgs = [window_rolling(emg, self.step_size, self.window_size) for emg in self.emgs]
@@ -306,13 +306,13 @@ class Nina4Processor(BaseProcessor):
             idxs = np.where(np.isin(self.reps, np.array(reps)))
             data = dict(emg=self.emgs[idxs].copy(),
                         lbl=self.lbls[idxs].copy())
-        elif split == 'test':
-            reps = [val_reps[-1]]
+        elif split == 'val':
+            reps = val_reps[:-1]
             idxs = np.where(np.isin(self.reps, np.array(reps)))
             data = dict(emg=self.emgs[idxs].copy(),
                         lbl=self.lbls[idxs].copy())
-        elif split == 'val':
-            reps = val_reps[:-1]
+        elif split == 'test':
+            reps = val_reps[-1]
             idxs = np.where(np.isin(self.reps, np.array(reps)))
             data = dict(emg=self.emgs[idxs].copy(),
                         lbl=self.lbls[idxs].copy())

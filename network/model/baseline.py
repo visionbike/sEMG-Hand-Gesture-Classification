@@ -57,12 +57,13 @@ class Baseline(nn.Module):
         # expansion block
         self.expansion = nn.Sequential(OrderedDict(
             conv=conv1d_same_1x1(in_channels, mid_channels, bias=True),
-            norm=norm_layer([mid_channels, in_dims]) if norm_layer.__name__ == 'LayerNorm' else norm_layer(mid_channels),
+            norm=norm_layer(mid_channels),
             act=act_layer(inplace=True)
         ))
+        self.mish = act_layer(inplace=True)
 
         # attention layer
-        self.att = att_layer(mid_channels, **att_kwargs)
+        self.att = att_layer(in_dims, **att_kwargs)
 
         # classifier
         self.clf = nn.Sequential(OrderedDict(

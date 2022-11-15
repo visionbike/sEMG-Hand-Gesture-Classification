@@ -15,7 +15,7 @@ def get_norm_layer(name: str) -> nn.Module:
     """
 
     if name == 'layernorm':
-        norm = nn.LayerNorm
+        norm = LayerNorm
     elif name == 'batchnorm1d':
         norm = nn.BatchNorm1d
     elif name == 'batchnorm2d':

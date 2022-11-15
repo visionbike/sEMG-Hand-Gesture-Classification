@@ -68,7 +68,7 @@ class GlobalContextAttention(nn.Module):
         # (B, C, N) -> (B, 1, N)
         context_mask = self.context_conv(z)
         # (B, 1, N) -> (B, 1, N)
-        context_mask = torch.softmax(context_mask, dim=2)
+        context_mask = torch.softmax(context_mask, dim=-1)
         # print(context_mask.shape)
         context_mask = context_mask.unsqueeze(-1)
         # (B, C, N) * (B, 1, N, 1) -> (B, 1, C, 1)

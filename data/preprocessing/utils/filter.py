@@ -82,8 +82,10 @@ def butter_low(x: NDArray, cutoff: float = 2., fs: float = 200., order: int = 4)
 
     nyq = 0.5 * fs  # nyquist frequency
     cutoff = cutoff / nyq
-    sos = signal.butter(N=order, Wn=cutoff, btype='low', analog=False, output='sos')
-    z = signal.sosfilt(sos, x)
+    # sos = signal.butter(N=order, Wn=cutoff, btype='low', analog=False, output='sos')
+    # z = signal.sosfilt(sos, x)
+    [b, a] = signal.butter(N=order, Wn=cutoff, btype='low', analog=False)
+    z = signal.lfilter(b, a, x)
     return z
 
 
@@ -100,8 +102,10 @@ def butter_high(x: NDArray, cutoff: float = 2., fs: float = 200., order: int = 4
 
     nyq = 0.5 * fs  # nyquist frequency
     cutoff = cutoff / nyq
-    sos = signal.butter(N=order, Wn=cutoff, btype='high', analog=False, output='sos')
-    z = signal.sosfilt(sos, x)
+    # sos = signal.butter(N=order, Wn=cutoff, btype='high', analog=False, output='sos')
+    # z = signal.sosfilt(sos, x)
+    [b, a] = signal.butter(N=order, Wn=cutoff, btype='high', analog=False)
+    z = signal.lfilter(b, a, x)
     return z
 
 
@@ -120,8 +124,10 @@ def butter_band(x: NDArray, lcut: float = 2., hcut: float = 5., fs: float = 200.
     nyq = 0.5 * fs  # nyquist frequency
     lcut = lcut / nyq
     hcut = hcut / nyq
-    sos = signal.butter(N=order, Wn=[lcut, hcut], btype='band', analog=False, output='sos')
-    z = signal.sosfilt(sos, x)
+    # sos = signal.butter(N=order, Wn=[lcut, hcut], btype='band', analog=False, output='sos')
+    # z = signal.sosfilt(sos, x)
+    [b, a] = signal.butter(N=order, Wn=[lcut, hcut], btype='band', analog=False)
+    z = signal.lfilter(b, a, x)
     return z
 
 

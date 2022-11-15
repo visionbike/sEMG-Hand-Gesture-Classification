@@ -40,15 +40,15 @@ class CosineAnnealingStartLR(_LRScheduler):
         # parameter checks
         self.last_epoch = None
         if T_0 <= 0 or not isinstance(T_0, int):
-            raise ValueError(f"Expected 'T_0' positive Integer type, but got 'T_0' = {T_0}.")
+            raise ValueError(f"Expected 'T_0' positive integer type, but got 'T_0' = {T_0}.")
         if T_start < 0 or not isinstance(T_start, int):
-            raise ValueError(f"Expected 'T_start' positive Integer type, but got 'T_start' = {T_start}.")
+            raise ValueError(f"Expected 'T_start' positive integer type, but got 'T_start' = {T_start}.")
         if T_start >= T_0:
             raise ValueError(f"Expected 'T_start' < 'T_0', but got 'T_start' >= 'T_0'.")
         if T_mult < 1. or not isinstance(T_mult, float):
-            raise ValueError(f"Expected Float 'T_mult' >= 1., but got 'T_mult' = {T_mult}.")
+            raise ValueError(f"Expected float 'T_mult' >= 1., but got 'T_mult' = {T_mult}.")
         if not (0. < gamma <= 1.) or not isinstance(gamma, float):
-            raise ValueError(f"Expected Float 0. < 'gamma' <= 1., but got 'gamma' = {gamma}.")
+            raise ValueError(f"Expected float 0. < 'gamma' <= 1., but got 'gamma' = {gamma}.")
 
         self.T_0 = T_0              # the first cycle step size
         self.T_start = T_start
@@ -67,8 +67,7 @@ class CosineAnnealingStartLR(_LRScheduler):
         self.cur_base_lrs = self.base_lrs.copy()
 
     def get_lr(self) -> list:
-
-        if (self.i_cur == -1) or (self.i_cur < self.T_start):
+        if (self.i_cur == -1) or (self.i_cur < self.T_start - 1):
             return self.cur_base_lrs
         else:
             return [
@@ -79,7 +78,6 @@ class CosineAnnealingStartLR(_LRScheduler):
             ]
 
     def step(self, epoch: Optional[int] = None) -> None:
-
         if epoch is None:
             epoch = self.last_epoch + 1
             self.i_cur += 1
