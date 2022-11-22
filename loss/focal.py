@@ -1,5 +1,4 @@
-from typing import Optional
-import numpy as np
+from typing import Optional, Union
 import torch
 import torch.nn as nn
 
@@ -14,12 +13,12 @@ class FocalLoss(nn.Module):
 
     Reference:
     - https://arxiv.org/abs/1708.02002.
-    - https://github.com/AdeelH/pytorch-multi-class-focal-loss/blob/master/focal_loss.py
+    - https://github.com/pytorch/vision/issues/3250
     """
 
     def __init__(self,
                  num_classes: int,
-                 alpha: Optional[list | torch.Tensor],
+                 alpha: Optional[list[float]] = None,
                  gamma: float = 2.,
                  reduction: str = 'mean'):
         """
@@ -32,53 +31,41 @@ class FocalLoss(nn.Module):
 
         # parameter checks
         if gamma < 0.:
-            raise ValueError(f"Expected 'gamma' >= 0., but got 'gamma' = {gamma}.")
+            raise ValueError(f"Expected float 'gamma' >= 0., but got 'gamma' = {gamma}.")
         if reduction not in ['mean', 'sum', 'none']:
             raise ValueError(f"Expected values: 'none'|'mean'|'sum', but got 'reduction' = {reduction}.")
 
         super(FocalLoss, self).__init__()
 
         self.num_classes = num_classes
-        if isinstance(alpha, list):
-            alpha = torch.from_numpy(np.array(alpha)).float()
-        self.alpha = alpha
+        self.alpha = torch.tensor(alpha).float() if (alpha is not None) else alpha
         self.gamma = gamma
         self.reduction = reduction
-        self.nll_loss = nn.NLLLoss(weight=alpha, reduction='none')
+        self.ce = nn.CrossEntropyLoss(reduction='none')
+        self.eps = 1e-9
 
-    def forward(self, pred: torch.Tensor, targ: torch.Tensor) -> torch.Tensor:
+    def forward(self, predicts: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
         """
 
-        :param pred: the predicted tensor.
-        :param targ: the target tensor.
+        :param predicts: the predicted logit tensor.
+        :param targets: the target tensor.
         :return:
         """
-        N, C = pred.shape[:2]
-        if self.alpha.shape[0] != C:
-            raise RuntimeError("The length not equal to the number of classes.")
-        if pred.is_cuda and not self.alpha.is_cuda:
-            self.alpha = self.alpha.to(pred.device)
-
-        # compute weighted cross entropy term: -alpha * log(pt)
-        # (alpha is already part of self.nll_loss)
-        log_p = torch.log_softmax(pred, dim=-1)
-        ce = self.nll_loss(log_p, targ)
-
-        # get true class column from each row
-        all_rows = torch.arange(len(pred))
-        log_pt = log_p[all_rows, targ]
-
-        # compute focal term: (1 - pt)^gamma
-        pt = torch.exp(log_pt)
-        ft = (1 - pt) ** self.gamma
-
-        # compute loss: -alpha * ((1. - pt) ^ gamma) * log(pt)
-        loss = ft * ce
-
+        if self.alpha is not None:
+            self.alpha = self.alpha.to(predicts.device)
+        # compute ce loss
+        ce_loss = self.ce(predicts + self.eps, targets)
+        # compute pt term
+        pt = torch.exp(-ce_loss)
+        # compute focal losses
+        if self.alpha is None:
+            focal_loss = ce_loss * ((1 - pt) ** self.gamma)
+        else:
+            focal_loss = self.alpha[targets] * ce_loss * ((1 - pt) ** self.gamma)
+            focal_loss / self.alpha.sum()
         # do reduction
         if self.reduction == 'mean':
-            loss = loss.mean()
+            focal_loss = focal_loss.mean()
         elif self.reduction == 'sum':
-            loss = loss.sum()
-
-        return loss
+            focal_loss = focal_loss.sum()
+        return focal_loss

@@ -13,11 +13,11 @@ if __name__ == '__main__':
     args = parser.parse()
 
     # set seed
-    pl.seed_everything(args.ExpConfig.seed)
+    pl.seed_everything(args.ExpConfig.seed, workers=True)
 
     # load data module
     data_kwargs = deepcopy(args.DataConfig)
-    data_ = get_data(**data_kwargs)
+    data_ = get_data(seed=args.ExpConfig.seed, **data_kwargs)
     data_.setup(stage=args.ExpConfig.phase)
     data_train = data_.train_dataloader()
     data_val = data_.val_dataloader()
@@ -37,9 +37,10 @@ if __name__ == '__main__':
     checkpoint_callback = ModelCheckpoint(
         dirpath=args.ExpConfig.exp_dir + '/checkpoints',
         filename='net_{epoch:02d}',
-        monitor='loss/val',
-        save_top_k=args.ExpConfig.epochs,
-        mode='min'
+        monitor='accuracy/val',
+        save_top_k=1,
+        mode='max',
+        save_last=True
     )
     # learning rate callback
     lr_monitor_callback = LearningRateMonitor(logging_interval='epoch')
@@ -64,15 +65,19 @@ if __name__ == '__main__':
                          callbacks=[checkpoint_callback, model_summary_callback, lr_monitor_callback],
                          logger=[tb_logger, neptune_logger],
                          max_epochs=args.ExpConfig.epochs,
-                         benchmark=True,
-                         deterministic=False)
+                         benchmark=False,
+                         deterministic=False,
+                         num_sanity_val_steps=0)
 
     # train model
     trainer.fit(model, train_dataloaders=data_train, val_dataloaders=data_val)
 
     # save best model checkpoint after training
-    shutil.copyfile(checkpoint_callback.best_model_path,
-                    args.ExpConfig.exp_dir + '/net_best.ckpt')
+    shutil.copyfile(checkpoint_callback.best_model_path, args.ExpConfig.exp_dir + '/net_best.ckpt')
+    shutil.copyfile(checkpoint_callback.last_model_path, args.ExpConfig.exp_dir + '/bet_last.ckpt')
 
     # test
-    trainer.test(ckpt_path=args.ExpConfig.exp_dir + '/net_best.ckpt', dataloaders=data_test)
+    # trainer.test(ckpt_path=args.ExpConfig.exp_dir + '/net_best.ckpt', dataloaders=data_test)
+    trainer.validate(model, dataloaders=data_val)
+    trainer.test(model, ckpt_path='best', dataloaders=data_test)
+    trainer.test(model, ckpt_path='last', dataloaders=data_test)

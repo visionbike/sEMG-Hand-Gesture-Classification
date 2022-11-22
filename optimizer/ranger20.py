@@ -1,9 +1,36 @@
-from typing import Optional, Callable, Any
+"""
+# Ranger deep learning optimizer - RAdam + Lookahead + Gradient Centralization, combined into one optimizer.
+
+# https://github.com/lessw2020/Ranger-Deep-Learning-Optimizer
+# and/or
+# https://github.com/lessw2020/Best-Deep-Learning-Optimizers
+
+# Ranger has been used to capture 12 records on the FastAI leaderboard.
+
+# This version = 2020.9.4
+
+
+# Credits:
+# Gradient Centralization --> https://arxiv.org/abs/2004.01461v2 (a new optimization technique for DNNs), github:  https://github.com/Yonghongwei/Gradient-Centralization
+# RAdam -->  https://github.com/LiyuanLucasLiu/RAdam
+# Lookahead --> rewritten by lessw2020, but big thanks to Github @LonePatient and @RWightman for ideas from their code.
+# Lookahead paper --> MZhang,G Hinton  https://arxiv.org/abs/1907.08610
+
+# summary of changes:
+# 9/4/20 - updated addcmul_ signature to avoid warning.  Integrates latest changes from GC developer (he did the work for this), and verified on performance on private dataset.
+# 4/11/20 - add gradient centralization option.  Set new testing benchmark for accuracy with it, toggle with use_gc flag at init.
+# full code integration with all updates at param level instead of group, moves slow weights into state dict (from generic weights),
+# supports group learning rates (thanks @SHolderbach), fixes sporadic load from saved model issues.
+# changes 8/31/19 - fix references to *self*.N_sma_threshold;
+# changed eps to 1e-5 as better default than 1e-8.
+"""
+
+from typing import Optional, Any, Callable
 import math
 import torch
-import torch.optim as optim
+from torch.optim.optimizer import Optimizer
 
-__all__ = ['Ranger']
+__all__ = ['Ranger20']
 
 
 def centralized_gradient(x: torch.Tensor, use_gc: bool = True, gc_conv_only: bool = False) -> torch.Tensor:
@@ -16,6 +43,7 @@ def centralized_gradient(x: torch.Tensor, use_gc: bool = True, gc_conv_only: boo
     :param gc_conv_only: whether to apply GC to conv1d layers only or conv1d + fc layers. Default: False.
     :return: the normalized gradient.
     """
+
     if use_gc:
         if gc_conv_only:
             if len(list(x.size())) > 3:
@@ -26,7 +54,7 @@ def centralized_gradient(x: torch.Tensor, use_gc: bool = True, gc_conv_only: boo
     return x
 
 
-class Ranger(optim.Optimizer):
+class Ranger20(Optimizer):
     """
     The Ranger optimizer combines two new Optimizer into a single optimizer:
     1. RAdam which is a variant of the Adam stochastic optimizer that introduces a term to rectify the variance of the adaptive learning rate.
@@ -48,16 +76,21 @@ class Ranger(optim.Optimizer):
     def __init__(self,
                  params,
                  lr: float = 1e-3,
-                 alpha: float = .5,
+                 alpha: float = 0.5,
                  k: int = 6,
                  n_sma_threshold: int = 5,
-                 betas: tuple = (.95, .999),
-                 eps: float = 1e-5,
+                 betas: tuple = (0.90, 0.999),
+                 eps: float = 1e-7,
                  weight_decay: float = 0,
                  use_gc: bool = True,
                  gc_conv_only: bool = False,
                  gc_loc: bool = True):
         """
+        parameter comments:
+        modified as Joseph et al. (2020): beta1 = 0.9, n_sma_threshold = 5, eps = 1e-7
+        beta1 (momentum) of .95 seems to work better than .90...
+        N_sma_threshold of 5 seems better in testing than 4.
+        In both cases, worth testing on your dataset (.90 vs .95, 4 vs 5) to make sure which works best for you.
 
         :param params: network parameters.
         :param lr: the learning rate. Default: 1e-3.
@@ -73,73 +106,69 @@ class Ranger(optim.Optimizer):
         """
 
         # parameter checks
-        if not 0. <= alpha <= 1.:
-            raise ValueError(f"Expected slow update rate 0. <= 'alpha' <= 1., but got 'alpha' = {alpha}.")
-        if k < 1:
-            raise ValueError(f"Expected lookahead steps 'k' <= 1, but got k = {k}.")
-        if lr <= 0:
-            raise ValueError(f"Expected learning rate lr > 0, but got 'lr' = {lr}.")
-        if eps <= 0:
-            raise ValueError(f"Expected epsilon eps <= 0, but got 'eps' = {eps}.")
+        if not 0.0 <= alpha <= 1.0:
+            raise ValueError(f'Invalid slow update rate: {alpha}')
+        if not 1 <= k:
+            raise ValueError(f'Invalid lookahead steps: {k}')
+        if not lr > 0:
+            raise ValueError(f'Invalid Learning Rate: {lr}')
+        if not eps > 0:
+            raise ValueError(f'Invalid eps: {eps}')
 
-        # prepare defaults and init torch.optim base
-        defaults = dict(lr=lr,
-                        alpha=alpha, k=k, n_sma_threshold=n_sma_threshold, step_counter=0,
-                        betas=betas, eps=eps, weight_decay=weight_decay)
-        super(Ranger, self).__init__(params, defaults)
+        # prep defaults and init torch.optim base
+        defaults = dict(lr=lr, alpha=alpha, k=k, step_counter=0, betas=betas,
+                        N_sma_threshhold=n_sma_threshold, eps=eps, weight_decay=weight_decay)
+
+        super().__init__(params, defaults)
 
         # adjustable threshold
         self.n_sma_threshold = n_sma_threshold
 
-        # lookahead params
+        # look ahead params
         self.alpha = alpha
         self.k = k
 
-        # RAdam buffer for state
+        # radam buffer for state
         self.radam_buffer = [[None, None, None] for _ in range(10)]
 
-        # to use GC or not
-        self.use_gc = use_gc
+        # gc on or off
         self.gc_loc = gc_loc
+        self.use_gc = use_gc
         self.gc_conv_only = gc_conv_only
-
         # level of gradient centralization
         # self.gc_gradient_threshold = 3 if gc_conv_only else 1
 
-        # print options
-        print(f"Ranger optimizer loaded.\nGradient Centralization usage = {self.use_gc}")
-        if self.use_gc and (not self.gc_conv_only):
-            print(f"GC applied to both conv1d and fc layers.")
-        elif self.use_gc and self.gc_conv_only:
-            print(f"GC applied to conv1d layers only.")
+        print(f"Ranger optimizer loaded.\nGradient Centralization usage = {self.use_gc}.")
+        if self.use_gc and self.gc_conv_only is False:
+            print(f"GC applied to both conv and fc layers")
+        elif self.use_gc and self.gc_conv_only is True:
+            print(f"GC applied to conv layers only")
 
     def __setstate__(self, state):
         print('Set state called...')
-        super(Ranger, self).__setstate__(state)
+        super(Ranger20, self).__setstate__(state)
 
-    def step(self, closure: Optional[Callable[..., Any]] = None) -> float:
+    def step(self, closure: Optional[Callable[..., Any]] = None) -> Optional[float]:
         loss = None
-
         # note - below is commented out b/c I have other work that passes back the loss as a float, and thus not a callable closure.
         # Uncomment if you need to use the actual closure...
         if closure is not None:
             loss = closure()
 
-        # evaluate averages and gradient, update param tensors
+        # Evaluate averages and grad, update param tensors
         for group in self.param_groups:
             for p in group['params']:
                 if p.grad is None:
                     continue
                 grad = p.grad.data.float()
                 if grad.is_sparse:
-                    raise RuntimeError('Ranger optimizer does not support gradients.')
+                    raise RuntimeError('Ranger optimizer does not support sparse gradients')
                 p_data_fp32 = p.data.float()
-
-                # get state dict from this param
-                state = self.state[p]
-
-                if len(state) == 0:
-                    # if first time to run...init dictionary with our desired entries
+                state = self.state[p]   # get state dict for this param
+                if len(state) == 0:     # if first time to run...init dictionary with our desired entries
+                    # if self.first_run_check==0:
+                    # self.first_run_check=1
+                    # print("Initializing slow buffer...should not see this at load from saved model!")
                     state['step'] = 0
                     state['exp_avg'] = torch.zeros_like(p_data_fp32)
                     state['exp_avg_sq'] = torch.zeros_like(p_data_fp32)
@@ -151,20 +180,21 @@ class Ranger(optim.Optimizer):
                     state['exp_avg_sq'] = state['exp_avg_sq'].type_as(p_data_fp32)
 
                 # begin computations
-                exp_avg = state['exp_avg']
-                exp_avg_sq = state['exp_avg_sq']
+                exp_avg, exp_avg_sq = state['exp_avg'], state['exp_avg_sq']
                 beta1, beta2 = group['betas']
 
-                # GC operation for conv1d layers and fc layers
+                # GC operation for Conv layers and FC layers
+                # if grad.dim() > self.gc_gradient_threshold:
+                #    grad.add_(-grad.mean(dim=tuple(range(1, grad.dim())), keepdim=True))
                 if self.gc_loc:
                     grad = centralized_gradient(grad, use_gc=self.use_gc, gc_conv_only=self.gc_conv_only)
                 state['step'] += 1
 
-                # compute variance moving avg
-                exp_avg_sq.mul_(beta2).addcmul_(grad, grad, value=(1 - beta2))
+                # compute variance mov avg
+                exp_avg_sq.mul_(beta2).addcmul_(grad, grad, value=1 - beta2)
 
                 # compute mean moving avg
-                exp_avg.mul_(beta1).add_(grad, alpha=(1 - beta1))
+                exp_avg.mul_(beta1).add_(grad, alpha=1 - beta1)
 
                 buffered = self.radam_buffer[int(state['step'] % 10)]
 
@@ -173,19 +203,18 @@ class Ranger(optim.Optimizer):
                 else:
                     buffered[0] = state['step']
                     beta2_t = beta2 ** state['step']
-                    n_sma_max = 2. / (1 - beta2) - 1
+                    n_sma_max = 2 / (1 - beta2) - 1
                     n_sma = n_sma_max - 2 * state['step'] * beta2_t / (1 - beta2_t)
                     buffered[1] = n_sma
                     if n_sma > self.n_sma_threshold:
-                        step_size = math.sqrt(
-                            (1 - beta2_t) * (n_sma - 4) / (n_sma_max - 4) * (n_sma - 2) / n_sma * n_sma_max / (n_sma_max - 2)
-                        ) / (1 - beta1 ** state['step'])
+                        step_size = math.sqrt((1 - beta2_t) * (n_sma - 4) / (n_sma_max - 4) * (n_sma - 2) / n_sma * n_sma_max / (n_sma_max - 2)) / (1 - beta1 ** state['step'])
                     else:
-                        step_size = 1. / (1 - beta1 ** state['step'])
+                        step_size = 1.0 / (1 - beta1 ** state['step'])
                     buffered[2] = step_size
 
                 # if group['weight_decay'] != 0:
-                #     p_data_fp32.add_(-group['weight_decay'] * group['lr'], p_data_fp32)
+                #    p_data_fp32.add_(-group['weight_decay']
+                #                     * group['lr'], p_data_fp32)
 
                 # apply lr
                 if n_sma > self.n_sma_threshold:
@@ -197,14 +226,14 @@ class Ranger(optim.Optimizer):
                 if group['weight_decay'] != 0:
                     g_grad.add_(p_data_fp32, alpha=group['weight_decay'])
 
-                # gc operation
-                if not self.gc_loc:
+                # GC operation
+                if self.gc_loc is False:
                     g_grad = centralized_gradient(g_grad, use_gc=self.use_gc, gc_conv_only=self.gc_conv_only)
 
                 p_data_fp32.add_(g_grad, alpha=-step_size * group['lr'])
                 p.data.copy_(p_data_fp32)
 
-                # integrated look ahead
+                # integrated look ahead...
                 # we do it at the param level instead of group level
                 if state['step'] % group['k'] == 0:
                     # get access to slow param tensor
@@ -213,4 +242,5 @@ class Ranger(optim.Optimizer):
                     slow_p.add_(p.data - slow_p, alpha=self.alpha)
                     # copy interpolated weights to RAdam param tensor
                     p.data.copy_(slow_p)
+
         return loss

@@ -1,13 +1,13 @@
 from typing import Union, Iterable
 import torch
 import torch.optim as optim
-from .ranger import *
+from .ranger20 import *
 
 __all__ = ['get_optimizer']
 
 
 def get_optimizer(params: Union[Iterable[torch.Tensor], Iterable[dict]],
-                  name: str = 'ranger',
+                  name: str = 'ranger20',
                   lr: float = 1e-3,
                   **kwargs) -> optim.Optimizer:
     """
@@ -28,8 +28,8 @@ def get_optimizer(params: Union[Iterable[torch.Tensor], Iterable[dict]],
         optimizer = optim.AdamW(params, lr, **kwargs)
     elif name == 'radam':
         optimizer = optim.RAdam(params, lr, **kwargs)
-    elif name == 'ranger':
-        optimizer = Ranger(params, lr, **kwargs)
+    elif name == 'ranger20':
+        optimizer = Ranger20(params, lr, **kwargs)
     else:
-        raise ValueError(f"Expected values: 'adam'|'adamw'|'radam'|'ranger', but got 'name' = {name}.")
+        raise ValueError(f"Expected values: 'adam'|'adamw'|'radam'|'ranger20', but got 'name' = {name}.")
     return optimizer

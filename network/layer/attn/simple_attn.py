@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from network.layer.conv1d import *
 
 __all__ = ['SimpleAttention']
 
@@ -38,18 +39,14 @@ class SimpleAttention(nn.Module):
 
         z = None
         if x.dim() == 3:
-            z = x.clone().detach()
+            z = x.clone().detach()  # (B, C, N)
         elif x.dim() == 4:
             z = x.view(b, c, x.size(2) * x.size(3))     # (B, C, F, T) -> (B, C, F*T)
 
-        # (B, C, N) -> (B, N, C)
-        # z = z.permute(0, 2, 1).contiguous()
         # get attention probability along sample-axis
         z = self.linear(z)
         att_score = torch.softmax(z, dim=-1)
 
-        # (B, N, C) -> (B, C, N)
-        # att_score = att_score.permute(0, 2, 1).contiguous()
         if x.dim() == 4:
             att_score = att_score.view(b, c, x.size(2), x.size(3))
 

@@ -7,6 +7,8 @@ from data.preprocessing.utils import *
 
 __all__ = ['NinaCompose', 'NinaToTensor', 'NinaMovingAverage', 'NinaRandomSNR', 'NinaTranspose']
 
+rand_list = sum([[(x / 2) % 30] * ((x // 2) % 30) for x in range(120)], [])     # outside the function because of calling many times
+
 
 class NinaCompose:
     """
@@ -66,14 +68,13 @@ class NinaRandomSNR:
         # noise factors to sample from, outside the function
         # because this will be called millions of times
         self.use_rest_label = use_rest_label
-        self.rlist = sum([[(x / 2) % 30] * ((x // 2) % 30) for x in range(120)], [])
 
-    def _add_noise_snr(self, x: NDArray, snr: float = 2.) -> NDArray:
+    def _add_noise_snr(self, x: NDArray, snr: float = 25.) -> NDArray:
         """
         Function to add white noise to the signal.
 
         :param x: the input signal.
-        :param snr: signal-to-noise factor. Default: 2.
+        :param snr: signal-to-noise factor. Default: 25.
         :return: the noise-added signal.
         """
 
@@ -96,7 +97,7 @@ class NinaRandomSNR:
         """
 
         # get random signal-to-noise factor
-        snr = random.choice(self.rlist)
+        snr = random.choice(rand_list)
         if self.use_rest_label:
             if y != 0:
                 x = self._add_noise_snr(x, snr)

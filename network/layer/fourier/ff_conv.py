@@ -1,6 +1,7 @@
 from typing import Union
 import torch
 import torch.nn as nn
+from network.layer.norm import *
 
 __all__ = ['FFConv', 'FourierUnit', 'SpectralTransform']
 
@@ -46,7 +47,7 @@ class FourierUnit(nn.Module):
 
         self.conv = nn.Conv2d(in_channels=(2 * in_channels), out_channels=(2 * out_channels),
                               kernel_size=1, stride=1, padding=0, groups=self.groups, bias=False)
-        self.norm = norm_layer([2 * out_channels, int(in_height // 2 + 1), in_width]) if norm_layer.__name__ == 'LayerNorm' else norm_layer(2 * out_channels)
+        self.norm = norm_layer(2 * out_channels)
         self.act = act_layer(inplace=True)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -67,7 +68,14 @@ class FourierUnit(nn.Module):
         ffted = ffted.view((b, -1,) + ffted.size()[3:])         # (B, C, 2, F/2+1, T) -> (B, 2*C, F/2+1, T)
 
         # apply 1x1 convolutional block in the frequency domain
-        ffted = self.act(self.norm(self.conv(ffted)))           # (B, 2*C, F/2+1, T)
+        ffted = self.conv(ffted)    # (B, 2*C, F/2+1, T)
+        if isinstance(self.norm, LayerNorm):
+            ffted = torch.permute(ffted, (0, 2, 3, 1)).contiguous()
+            ffted = self.norm(ffted)
+            ffted = torch.permute(ffted, (0, 3, 1, 2)).contiguous()
+        else:
+            ffted = self.norm(ffted)
+        ffted = self.act(ffted)
         ffted = ffted.view((b, -1, 2,) + ffted.size()[2:])      # (B, 2*C, F/2+1, T) -> (B, C, 2, F/2+1, T)
         ffted = ffted.permute(0, 1, 3, 4, 2).contiguous()       # (B, C, 2, F/2+1, T) -> (B, C, F/2+1, T, 2)
         ffted = torch.complex(ffted[..., 0], ffted[..., 1])     # (B, C, F/2+1, T, 2) -> (B, C, F/2+1, T)
@@ -129,13 +137,11 @@ class SpectralTransform(nn.Module):
         else:
             self.downsample = nn.Identity()
 
-        self.conv1 = nn.Sequential(
-            nn.Conv2d(in_channels=in_channels,
-                      out_channels=(out_channels // 2),
-                      kernel_size=1, groups=groups, bias=False),
-            norm_layer([out_channels // 2, in_height, in_width]) if norm_layer.__name__ == 'LayerNorm' else norm_layer(out_channels // 2),
-            act_layer(inplace=True)
-        )
+        self.conv1 = nn.Conv2d(in_channels=in_channels,
+                               out_channels=(out_channels // 2),
+                               kernel_size=1, groups=groups, bias=False)
+        self.norm1 = norm_layer(out_channels // 2)
+        self.act1 = act_layer(inplace=True)
 
         self.conv2 = nn.Conv2d(in_channels=(out_channels // 2),
                                out_channels=out_channels,
@@ -164,6 +170,13 @@ class SpectralTransform(nn.Module):
 
         x = self.downsample(x)
         x = self.conv1(x)
+        if isinstance(self.norm1, LayerNorm):
+            x = torch.permute(x, (0, 2, 3, 1)).contiguous()
+            x = self.norm1(x)
+            x = torch.permute(x, (0, 3, 1, 2)).contiguous()
+        else:
+            x = self.norm1(x)
+        x = self.act1(x)
         z = self.fu(x)
 
         if self.enable_lfu:
@@ -262,7 +275,10 @@ class FFConv(nn.Module):
         :return: local and global branch tensor.
         """
 
-        x_l, x_g = x[:, :-self.in_cg], x[:, -self.in_cg:] if type(x) is torch.Tensor else x
+        if isinstance(x, tuple):
+            x_l, x_g = x
+        elif isinstance(x, torch.Tensor):
+            x_l, x_g = x[:, :-self.in_cg], x[:, -self.in_cg:]
         z_l, z_g = None, None
 
         if self.ratio_gout != 1:

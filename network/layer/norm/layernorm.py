@@ -21,23 +21,23 @@ class LayerNorm(nn.Module):
     def __init__(self,
                  normalized_shape: Optional[Union[int, list[int], torch.Size]],
                  eps: float = 1e-6,
-                 data_format: str = 'channel_first'):
+                 order: str = 'last'):
         """
 
         :param normalized_shape: the normalization input shape.
         :param eps: the epsilon value. Default: 1e-6.
-        :param data_format: order of the input dimensions, includes
-            'channel_last' corresponds to tensor in shape (B, *, C).
-            'channel_first' corresponds to tensor in shape (B, C, *).
-            Default: 'channel_first'.
+        :param order: order of the input dimensions, includes
+            'last' corresponds to tensor in shape (B, *, C).
+            'first' corresponds to tensor in shape (B, C, *).
+            Default: 'last'.
         """
 
         super(LayerNorm, self).__init__()
         self.weight = nn.Parameter(torch.ones(normalized_shape))
         self.bias = nn.Parameter(torch.zeros(normalized_shape))
         self.eps = eps
-        self.data_format = data_format
-        if self.data_format not in ['channel_first', 'channel_last']:
+        self.order = order
+        if self.order not in ['first', 'last']:
             raise NotImplementedError
         self.normalized_shape = (normalized_shape,)
 
@@ -48,9 +48,9 @@ class LayerNorm(nn.Module):
         :return:
         """
 
-        if self.data_format == 'channel_last':
+        if self.order == 'last':
             return Fn.layer_norm(x, self.normalized_shape, self.weight, self.bias, self.eps)
-        elif self.data_format == 'channel_first':
+        elif self.order == 'first':
             mean = x.mean(1, keepdim=True)
             var = (x - mean).pow(2).mean(1, keepdim=True)
             x = (x - mean) / torch.sqrt(var + self.eps)

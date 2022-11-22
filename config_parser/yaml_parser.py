@@ -118,8 +118,7 @@ class YamlConfigParser(BaseConfigParser, ABC):
             cfgs.LossConfig.num_classes = cfgs.DataConfig.num_classes
             cfgs.LossConfig.weights = get_class_weights(
                 cfgs.LossConfig.num_classes,
-                cfgs.LossConfig.use_weights,
-                cfgs.LossConfig.weight_value)
+                cfgs.LossConfig.weights)
 
         # setup metric config
         cfgs.MetricConfig = cn()

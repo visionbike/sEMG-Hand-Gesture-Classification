@@ -80,28 +80,24 @@ def compute_class_weights(x: NDArray) -> dict:
     return props_norm
 
 
-def get_class_weights(num_classes: int, use_weight: bool, based_weights: Optional[Union[str, float, int]]) -> Optional[NDArray]:
+def get_class_weights(num_classes: int, based_weights: Optional[Union[str, float, list[float]]] = None) -> Optional[Union[list[float], float]]:
     """
     Get the clas weights form configuration.
 
     :param num_classes: the number of classes.
-    :param use_weight: whether to apply class weights or not.
     :param based_weights: the weight file path or weight array.
         If 'base_weights' is *. npy file path, load the class weights from the file.
-        If 'base_weights' is float or integer value, return a list of these values.
-        If 'base_weights' is None, return a list of ones.
+        If 'base_weights' is float or list of float value, return the value itself.
+        If 'base_weights' is None, return None.
     :return: the class weight array or None.
     """
 
-    if use_weight:
-        if isinstance(based_weights, str):
-            weights = np.load(based_weights).tolist()
-        elif isinstance(based_weights, (float, int)):
-            weights = np.full(num_classes, based_weights).tolist()
-        else:
-            weights = np.ones(num_classes).tolist()
+    if isinstance(based_weights, str):
+        weights = np.load(based_weights).tolist()
+    elif isinstance(based_weights, float):
+        weights = [based_weights] * num_classes
     else:
-        weights = None
+        weights = based_weights
     return weights
 
 

@@ -2,7 +2,7 @@ from collections import OrderedDict
 import torch
 import torch.nn as nn
 from network.layer.conv1d import *
-from network.layer.conv2d import *
+from network.layer.norm import *
 
 __all__ = ['GlobalContextAttention']
 
@@ -39,7 +39,7 @@ class GlobalContextAttention(nn.Module):
         self.context_conv = conv1d_same_1x1(in_channels, 1, bias=True)
         self.transform = nn.Sequential(OrderedDict(
             conv1=conv1d_same_1x1(in_channels, mid_channels, bias=True),
-            norm=nn.LayerNorm([mid_channels, 1]),
+            norm=LayerNorm(mid_channels, order='first'),
             act=nn.Mish(inplace=True),
             conv2=conv1d_same_1x1(mid_channels, in_channels, bias=True)
         ))
@@ -60,18 +60,18 @@ class GlobalContextAttention(nn.Module):
 
         z = None
         if x.dim() == 3:
-            z = x.clone().detach()
+            z = x.clone().detach()  # (B, C, N)
         elif x.dim() == 4:
             z = x.view(b, c, x.size(2) * x.size(3))     # (B, C, F, T) -> (B, C, F*T)
 
         # compute context map
         # (B, C, N) -> (B, 1, N)
         context_mask = self.context_conv(z)
-        # (B, 1, N) -> (B, 1, N)
+        # compute softmax score along sample-axis
         context_mask = torch.softmax(context_mask, dim=-1)
-        # print(context_mask.shape)
+        # (B, 1, N) -> (B, 1, N, 1)
         context_mask = context_mask.unsqueeze(-1)
-        # (B, C, N) * (B, 1, N, 1) -> (B, 1, C, 1)
+        # (B, 1, C, N) * (B, 1, N, 1) -> (B, 1, C, 1)
         context = torch.matmul(z.unsqueeze(1), context_mask)
         # (B, 1, C, 1) -> (B, C, 1)
         context = context.view(b, c, -1)
@@ -79,7 +79,6 @@ class GlobalContextAttention(nn.Module):
         # recalibrate context map or obtain attention score map
         # (B, C, 1) -> (B, C // r, 1) -> (B, C, 1)
         att_score = self.transform(context)
-
         if x.dim() == 4:
             att_score = att_score.unsqueeze(-1)     # (B, C, 1, 1)
 

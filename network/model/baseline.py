@@ -2,7 +2,6 @@ from typing import Optional
 from collections import OrderedDict
 import torch
 import torch.nn as nn
-from network.layer import *
 from network.model.init_weight import *
 
 __all__ = ['Baseline']
@@ -56,14 +55,17 @@ class Baseline(nn.Module):
 
         # expansion block
         self.expansion = nn.Sequential(OrderedDict(
-            conv=conv1d_same_1x1(in_channels, mid_channels, bias=True),
+            linear=nn.Linear(in_channels, mid_channels, bias=True),
             norm=norm_layer(mid_channels),
             act=act_layer(inplace=True)
         ))
-        self.mish = act_layer(inplace=True)
 
         # attention layer
-        self.att = att_layer(in_dims, **att_kwargs)
+        if att_layer.__name__ == 'SimpleAttention':
+            att_channels = in_dims
+        else:
+            att_channels = mid_channels
+        self.att = att_layer(att_channels, **att_kwargs)
 
         # classifier
         self.clf = nn.Sequential(OrderedDict(
@@ -93,8 +95,11 @@ class Baseline(nn.Module):
         :param x: the input tensor in shape of (B, C, N).
         :return:
         """
-
-        z = self.expansion(x)       # expansion layer
+        # (B, C, N) -> (B, N, C)
+        z = torch.permute(x, (0, 2, 1)).contiguous()
+        z = self.expansion(z)       # expansion layer
+        # (B, N, C) -> (B, C, N)
+        z = torch.permute(z, (0, 2, 1)).contiguous()
         z = self.att(z)             # attention layer
         z = torch.sum(z, dim=-1)    # temporal reduction
         z = self.clf(z)             # classifier

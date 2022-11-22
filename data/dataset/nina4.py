@@ -47,7 +47,7 @@ class Nina4Dataset(Dataset):
         return self.lbls.shape[0]
 
     def __getitem__(self, idx: int):
-        x = self.data[idx]
+        x = self.data[idx].copy()
         y = self.lbls[idx]
         x, y = self.transforms(x, y)
         return x, y

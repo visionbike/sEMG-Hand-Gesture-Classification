@@ -141,7 +141,6 @@ class Nina1Processor(BaseProcessor):
         :return:
         """
 
-        print('### Processing data...')
         if self.use_rectify:
             print('Rectifying...')
             self.emgs = [np.abs(emg) for emg in self.emgs]

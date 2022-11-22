@@ -1,6 +1,8 @@
 import gc
 from pathlib import Path
+import random
 import numpy as np
+import torch
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
 from .preprocessing import *
@@ -10,13 +12,25 @@ from .dataset import *
 __all__ = ['get_data']
 
 
-def get_data(name: str, **kwargs: dict) -> pl.LightningDataModule:
+def seed_worker(worker_id):
+    worker_seed = torch.initial_seed() % 2**32
+    np.random.seed(worker_seed)
+    random.seed(worker_seed)
+
+
+g = torch.Generator()
+
+
+def get_data(name: str, seed: int, **kwargs: dict) -> pl.LightningDataModule:
     """
 
     :param name: the dataset name.
+    :param seed:
     :param kwargs:
     :return:
     """
+
+    g.manual_seed(seed)
 
     if name == 'nina1':
         return Nina1Data(**kwargs)
@@ -61,7 +75,7 @@ class Nina1Data(pl.LightningDataModule):
 
         self.batch_size = kwargs.pop('batch_size')
         self.num_workers = kwargs.pop('num_workers')
-
+        self.use_augment = kwargs.pop('use_augment')
         self.kwargs = kwargs
 
         self.train = None
@@ -74,15 +88,15 @@ class Nina1Data(pl.LightningDataModule):
             data_val = np.load(str(self.path / 'val.npz'), allow_pickle=True)
             data_test = np.load(str(self.path / 'test.npz'), allow_pickle=True)
             #
-            self.train = Nina1Dataset(data_train, self.kwargs)
-            self.val = Nina1Dataset(data_val, self.kwargs)
-            self.test = Nina1Dataset(data_test, self.kwargs)
+            self.train = Nina1Dataset(data_train, use_augment=self.use_augment, **self.kwargs)
+            self.val = Nina1Dataset(data_val, use_augment=False, **self.kwargs)
+            self.test = Nina1Dataset(data_test, use_augment=False, **self.kwargs)
             #
             del data_train, data_val, data_test
             gc.collect()
         elif stage == 'test':
             data_test = np.load(str(self.path / 'test.npz'), allow_pickle=True)
-            self.test = Nina1Dataset(data_test, self.kwargs)
+            self.test = Nina1Dataset(data_test, use_augment=False, **self.kwargs)
             #
             del data_test
             gc.collect()
@@ -91,15 +105,15 @@ class Nina1Data(pl.LightningDataModule):
 
     def train_dataloader(self) -> DataLoader:
         return DataLoader(self.train,
-                          batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers, pin_memory=True)
+                          batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers, pin_memory=False)
 
     def val_dataloader(self) -> DataLoader:
         return DataLoader(self.val,
-                          batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers, pin_memory=True)
+                          batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers, pin_memory=False)
 
     def test_dataloader(self) -> DataLoader:
         return DataLoader(self.test,
-                          batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers, pin_memory=True)
+                          batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers, pin_memory=False)
 
 
 class Nina4Data(pl.LightningDataModule):
@@ -135,7 +149,7 @@ class Nina4Data(pl.LightningDataModule):
 
         self.batch_size = kwargs.pop('batch_size')
         self.num_workers = kwargs.pop('num_workers')
-
+        self.use_augment = kwargs.get('use_augment')
         self.kwargs = kwargs
 
         self.train = None
@@ -148,15 +162,15 @@ class Nina4Data(pl.LightningDataModule):
             data_val = np.load(str(self.path / 'val.npz'), allow_pickle=True)
             data_test = np.load(str(self.path / 'test.npz'), allow_pickle=True)
             #
-            self.train = Nina4Dataset(data_train, self.kwargs)
-            self.val = Nina4Dataset(data_val, self.kwargs)
-            self.test = Nina4Dataset(data_test, self.kwargs)
+            self.train = Nina4Dataset(data_train, use_augment=self.use_augment, **self.kwargs)
+            self.val = Nina4Dataset(data_val, use_augment=False, **self.kwargs)
+            self.test = Nina4Dataset(data_test, use_augment=False, **self.kwargs)
             #
             del data_train, data_val, data_test
             gc.collect()
         elif stage == 'test':
             data_test = np.load(str(self.path / 'test.npz'), allow_pickle=True)
-            self.test = Nina4Dataset(data_test, self.kwargs)
+            self.test = Nina4Dataset(data_test, use_augment=False, **self.kwargs)
             #
             del data_test
             gc.collect()
@@ -165,15 +179,15 @@ class Nina4Data(pl.LightningDataModule):
 
     def train_dataloader(self) -> DataLoader:
         return DataLoader(self.train,
-                          batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers, pin_memory=True)
+                          batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers, pin_memory=False)
 
     def val_dataloader(self) -> DataLoader:
         return DataLoader(self.val,
-                          batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers, pin_memory=True)
+                          batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers, pin_memory=False)
 
     def test_dataloader(self) -> DataLoader:
         return DataLoader(self.test,
-                          batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers, pin_memory=True)
+                          batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers, pin_memory=False)
 
 
 class Nina5Data(pl.LightningDataModule):
@@ -209,7 +223,7 @@ class Nina5Data(pl.LightningDataModule):
 
         self.batch_size = kwargs.pop('batch_size')
         self.num_workers = kwargs.pop('num_workers')
-
+        self.use_augment = kwargs.pop('use_augment')
         self.kwargs = kwargs
 
         self.train = None
@@ -222,17 +236,15 @@ class Nina5Data(pl.LightningDataModule):
             data_val = np.load(str(self.path / 'val.npz'), allow_pickle=True)
             data_test = np.load(str(self.path / 'test.npz'), allow_pickle=True)
             #
-            self.train = Nina5Dataset(data_train, **self.kwargs)
-            if self.kwargs['use_augment'] is True:
-                self.kwargs['use_augment'] = False
-            self.val = Nina5Dataset(data_val, **self.kwargs)
-            self.test = Nina5Dataset(data_test, **self.kwargs)
+            self.train = Nina5Dataset(data_train, use_augment=self.use_augment, **self.kwargs)
+            self.val = Nina5Dataset(data_val, use_augment=False, **self.kwargs)
+            self.test = Nina5Dataset(data_test, use_augment=False, **self.kwargs)
             #
             del data_train, data_val, data_test
             gc.collect()
         elif stage == 'test':
             data_test = np.load(str(self.path / 'test.npz'), allow_pickle=True)
-            self.test = Nina5Dataset(data_test, **self.kwargs)
+            self.test = Nina5Dataset(data_test, use_augment=False, **self.kwargs)
             #
             del data_test
             gc.collect()
@@ -241,12 +253,12 @@ class Nina5Data(pl.LightningDataModule):
 
     def train_dataloader(self) -> DataLoader:
         return DataLoader(self.train,
-                          batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers, pin_memory=True)
+                          batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers, pin_memory=True, worker_init_fn=seed_worker, generator=g)
 
     def val_dataloader(self) -> DataLoader:
         return DataLoader(self.val,
-                          batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers, pin_memory=True)
+                          batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers, pin_memory=True, worker_init_fn=seed_worker, generator=g)
 
     def test_dataloader(self) -> DataLoader:
         return DataLoader(self.test,
-                          batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers, pin_memory=True)
+                          batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers, pin_memory=True, worker_init_fn=seed_worker, generator=g)

@@ -1,5 +1,4 @@
-from typing import Optional
-import torch
+from typing import Optional, Union
 import torch.nn as nn
 from .focal import *
 
@@ -7,7 +6,7 @@ __all__ = ['get_loss']
 
 
 def get_loss(name: str = 'focal',
-             weights: Optional[torch.Tensor] = None,
+             weights: Optional[Union[list[float], float]] = None,
              gamma: Optional[float] = 2.,
              **kwargs) -> nn.Module:
     """
@@ -27,7 +26,7 @@ def get_loss(name: str = 'focal',
         loss = nn.CrossEntropyLoss(weight=weights, reduction=kwargs['reduction'])
     elif name == 'focal':
         if gamma is None or gamma < 0:
-            raise ValueError(f"Expected positive Float type 'gamma', but got 'gamma' = {gamma}.")
+            raise ValueError(f"Expected positive float 'gamma', but got 'gamma' = {gamma}.")
         if 'num_classes' not in kwargs.keys():
             raise ValueError(f"Not found 'num_classes' argument, but got {kwargs}.")
         loss = FocalLoss(kwargs['num_classes'], alpha=weights, gamma=gamma, reduction=kwargs['reduction'])

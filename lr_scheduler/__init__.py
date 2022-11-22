@@ -1,6 +1,7 @@
 from torch import nn
 from torch.optim import Optimizer
-from .cosine_start import *
+from .cosine_onecycle_start import *
+from .cosine_warmup_restart import *
 
 __all__ = ['get_scheduler']
 
@@ -15,10 +16,10 @@ def get_scheduler(optimizer: Optimizer, name: str = 'cosine', **kwargs) -> nn.Mo
     :return: the learning rate scheduler.
     """
 
-    if name == 'cosine_start':
-        if not {'T_0', 'T_start', 'T_mult', 'eta_min', 'gamma'}.issubset(kwargs.keys()):
-            raise ValueError(f"Not found required arguments = {{'T_0', 'T_start', 'T_mult', 'eta_min', 'gamma'}}, but got {kwargs.keys()}.")
-        scheduler = CosineAnnealingStartLR(optimizer, **kwargs)
+    if name == 'cosine_onecycle':
+        scheduler = CosineAnnealingOneCycleRL(optimizer, **kwargs)
+    elif name == 'cosine_warmup_restart':
+        scheduler = CosineAnnealingWarmupRestartRL(optimizer, **kwargs)
     else:
-        raise ValueError(f"Expected values: 'cosine', but got 'name' = {name}.")
+        raise ValueError(f"Expected values: 'cosine_onecycle'|'cosine_warmup_restart', but got 'name' = {name}.")
     return scheduler
