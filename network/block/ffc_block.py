@@ -138,7 +138,7 @@ class PreFFCBlock(nn.Module):
                           ksize, stride, padding, groups,
                           enable_lfu=enable_lfu, norm_layer=norm_layer, act_layer=act_layer)
 
-    def forward(self, x: Union[tuple[torch.Tensor, torch.Tensor], torch.Tensor]) -> tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, x: Union[tuple[torch.Tensor, torch.Tensor], torch.Tensor]) -> torch.Tensor:
         """
 
         :param x: the input tensor in shape of (B, C, F, T) or the tuple of 2 global and local tensors in shape of (B, C, F, T).
@@ -154,4 +154,6 @@ class PreFFCBlock(nn.Module):
             z = self.norm(z)
         #
         z_l, z_g = self.ffc(z)
-        return z_l, z_g
+        #
+        z = torch.cat((z_l, z_g), dim=1)
+        return z

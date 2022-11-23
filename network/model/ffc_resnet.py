@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Optional
 import torch
 import torch.nn as nn
 import torch.nn.functional as Fn
@@ -92,7 +92,10 @@ class FFCResnet(nn.Module):
                  groups: int = 1,
                  enable_lfu: bool = True,
                  norm_layer: nn.Module = nn.LayerNorm,
-                 act_layer: nn.Module = nn.Mish):
+                 act_layer: nn.Module = nn.Mish,
+                 att_layer: nn.Module = nn.Identity,
+                 att_kwargs: Optional[dict] = None,
+                 **kwargs: dict):
 
         super(FFCResnet, self).__init__()
 
@@ -113,8 +116,11 @@ class FFCResnet(nn.Module):
             in_channels = out_channels
         #
         self.conv2 = nn.Conv2d(2 * mid_channels, mid_channels, kernel_size=7, stride=1, padding=3, bias=True)
+        #
+        self.att = att_layer(**att_kwargs)
+        #
         self.linear = nn.Linear(mid_channels * in_freq * in_time, num_classes, bias=False)
-
+        #
         self.apply(init_weight)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -138,6 +144,8 @@ class FFCResnet(nn.Module):
             z = block(z)
         #
         z = self.conv2(z)
+        #
+        z = self.att(z)
         #
         z = z.view(b, -1)
         z = self.linear(z)
