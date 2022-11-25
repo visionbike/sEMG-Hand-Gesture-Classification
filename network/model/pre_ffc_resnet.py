@@ -88,17 +88,18 @@ class PreFFCResnet(nn.Module):
 
         self.conv1 = nn.Conv2d(in_channels, mid_channels, kernel_size=7, stride=1, padding=3, bias=True)
         #
-        self.ffc_blocks = []
+        ffc_blocks = []
         in_channels = mid_channels
         for i in range(num_blocks):
             out_channels = 2 * mid_channels
-            self.ffc_blocks += [
+            ffc_blocks += [
                 PreBasicBlock(in_channels, in_freq, in_time, out_channels,
                               ratio_gin, ratio_gout,
                               ksize=ksize, stride=stride, padding=padding, groups=groups,
                               enable_lfu=enable_lfu, norm_layer=norm_layer, act_layer=act_layer)
             ]
             in_channels = out_channels
+        self.ffc_blocks = nn.ModuleList(ffc_blocks)
         #
         self.act2 = act_layer(inplace=True)
         self.norm2 = norm_layer(2 * mid_channels)

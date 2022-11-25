@@ -12,13 +12,13 @@ from .dataset import *
 __all__ = ['get_data']
 
 
-def seed_worker(worker_id):
-    worker_seed = torch.initial_seed() % 2**32
-    np.random.seed(worker_seed)
-    random.seed(worker_seed)
+# def seed_worker(worker_id):
+#     worker_seed = torch.initial_seed() % 2**32
+#     np.random.seed(worker_seed)
+#     random.seed(worker_seed)
 
 
-g = torch.Generator()
+# g = torch.Generator('cuda')
 
 
 def get_data(name: str, seed: int, **kwargs: dict) -> pl.LightningDataModule:
@@ -30,7 +30,7 @@ def get_data(name: str, seed: int, **kwargs: dict) -> pl.LightningDataModule:
     :return:
     """
 
-    g.manual_seed(seed)
+    # g.manual_seed(seed)
 
     if name == 'nina1':
         return Nina1Data(**kwargs)
@@ -149,7 +149,7 @@ class Nina4Data(pl.LightningDataModule):
 
         self.batch_size = kwargs.pop('batch_size')
         self.num_workers = kwargs.pop('num_workers')
-        self.use_augment = kwargs.get('use_augment')
+        self.use_augment = kwargs.pop('use_augment')
         self.kwargs = kwargs
 
         self.train = None
@@ -253,12 +253,12 @@ class Nina5Data(pl.LightningDataModule):
 
     def train_dataloader(self) -> DataLoader:
         return DataLoader(self.train,
-                          batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers, pin_memory=True, worker_init_fn=seed_worker, generator=g)
+                          batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers, pin_memory=True) # worker_init_fn=seed_worker, generator=g)
 
     def val_dataloader(self) -> DataLoader:
         return DataLoader(self.val,
-                          batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers, pin_memory=True, worker_init_fn=seed_worker, generator=g)
+                          batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers, pin_memory=True) # worker_init_fn=seed_worker, generator=g)
 
     def test_dataloader(self) -> DataLoader:
         return DataLoader(self.test,
-                          batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers, pin_memory=True, worker_init_fn=seed_worker, generator=g)
+                          batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers, pin_memory=True) # , worker_init_fn=seed_worker, generator=g)

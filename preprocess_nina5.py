@@ -10,7 +10,7 @@ if __name__ == '__main__':
     parser = ArgumentParser(description='NinaPro5 Processing')
     parser.add_argument('--path', type=str, help='The raw Nina5 path')
     parser.add_argument('--save', type=str, help='The save path')
-    parser.add_argument('--ver', type=int, default=2, help='The processing version')
+    parser.add_argument('--ver', type=int, default=1, help='The processing version')
     parser.add_argument('--imu', action='store_true', default=False, help='Using IMU data')
     parser.add_argument('--rectify', action='store_true', default=False, help='Using signal rectifying')
     parser.add_argument('--butter', action='store_true', default=False, help='Using butterworth filter')
@@ -18,6 +18,7 @@ if __name__ == '__main__':
     parser.add_argument('--wsize', type=int, default=52, help='window size')
     parser.add_argument('--first', action='store_true', default=False, help='Using first appearance')
     parser.add_argument('--rest', action='store_true', default=False, help='Using Rest label')
+    parser.add_argument('--multiproc', action='store_true', default=False, help='Using multi-processing')
     args = parser.parse_args()
 
     # create paths
@@ -61,7 +62,7 @@ if __name__ == '__main__':
 
     # process data
     print('### Processing data...')
-    processor.process_data(args.ver)
+    processor.process_data(args.ver, args.multiproc)
 
     # split data
     print('### Splitting data...')

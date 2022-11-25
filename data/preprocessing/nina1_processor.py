@@ -129,7 +129,7 @@ class Nina1Processor(BaseProcessor):
             self.reps += reps
         print('Done!')
 
-    def _process_data_v1(self) -> None:
+    def _process_data_v1(self, multiproc: bool = True) -> None:
         """
         Preprocess sEMG data version 1:
         1. Processing data (rectifying, filtering, etc.)
@@ -138,6 +138,7 @@ class Nina1Processor(BaseProcessor):
         4. Relabel for multiple label-containing window
         5. Post-processing (quantize, do/do not remove rest label, etc.)
 
+        :param multiproc: whether to apply multi-processing to process data, otherwise use multi-threading. Default: True.
         :return:
         """
 
@@ -178,11 +179,11 @@ class Nina1Processor(BaseProcessor):
         inn_lbls = [self.lbls[i] for i in range(self.lbls.shape[0])]
         inn_reps = [self.reps[i] for i in range(self.reps.shape[0])]
         if self.use_first_appearance:
-            self.lbls = replace_by_first_label(inn_lbls)
-            self.reps = replace_by_first_label(inn_reps)
+            self.lbls = replace_by_first_label(inn_lbls, multiproc)
+            self.reps = replace_by_first_label(inn_reps, multiproc)
         else:
-            self.lbls = replace_by_major_label(inn_lbls)
-            self.reps = replace_by_major_label(inn_reps)
+            self.lbls = replace_by_major_label(inn_lbls, multiproc)
+            self.reps = replace_by_major_label(inn_reps, multiproc)
         # release memory
         del inn_lbls, inn_reps
         gc.collect()
@@ -199,7 +200,7 @@ class Nina1Processor(BaseProcessor):
             self.lbls -= 1
         print('Done!')
 
-    def _process_data_v2(self) -> None:
+    def _process_data_v2(self, multiproc: bool = True) -> None:
         """
         Preprocess sEMG data version 2:
         1. Rolling data
@@ -208,6 +209,7 @@ class Nina1Processor(BaseProcessor):
         4. Relabel for multiple label-containing window
         5. Post-processing (quantize, do/do not remove rest label, etc.)
 
+        :param multiproc: whether to apply multi-processing to process data, otherwise use multi-threading. Default: True.
         :return:
         """
 
@@ -241,13 +243,14 @@ class Nina1Processor(BaseProcessor):
         inn_lbls = [self.lbls[i] for i in range(self.lbls.shape[0])]
         inn_reps = [self.reps[i] for i in range(self.reps.shape[0])]
         if self.use_first_appearance:
-            self.lbls = replace_by_first_label(inn_lbls)
-            self.reps = replace_by_first_label(inn_reps)
+            self.lbls = replace_by_first_label(inn_lbls, multiproc)
+            self.reps = replace_by_first_label(inn_reps, multiproc)
         else:
-            self.lbls = replace_by_major_label(inn_lbls)
-            self.reps = replace_by_major_label(inn_reps)
-        inn_lbls = [self.lbls[i] for i in range(self.lbls.shape[0])]
-        inn_reps = [self.reps[i] for i in range(self.reps.shape[0])]
+            self.lbls = replace_by_major_label(inn_lbls, multiproc)
+            self.reps = replace_by_major_label(inn_reps, multiproc)
+        # release memory
+        del inn_lbls, inn_reps
+        gc.collect()
 
         print('### Processing data...')
         if self.use_rectify:
@@ -275,18 +278,19 @@ class Nina1Processor(BaseProcessor):
             self.lbls -= 1
         print('Done!')
 
-    def process_data(self, ver: int = 1) -> None:
+    def process_data(self, ver: int = 1, multiproc: bool = True) -> None:
         """
         Processing sEMG data.
 
         :param ver: Process data by the 1st or 2nd way. Default: 1.
+        :param multiproc: whether to apply multi-processing to process data, otherwise use multi-threading. Default: True.
         :return:
         """
 
         if ver == 1:
-            self._process_data_v1()
+            self._process_data_v1(multiproc)
         else:
-            self._process_data_v2()
+            self._process_data_v2(multiproc)
 
     def split_data(self, split: str) -> dict[str, Any]:
         """

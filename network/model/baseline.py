@@ -95,6 +95,7 @@ class Baseline(nn.Module):
         :param x: the input tensor in shape of (B, C, N).
         :return:
         """
+
         # (B, C, N) -> (B, N, C)
         z = torch.permute(x, (0, 2, 1)).contiguous()
         z = self.expansion(z)       # expansion layer

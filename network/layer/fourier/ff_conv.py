@@ -277,7 +277,7 @@ class FFConv(nn.Module):
 
         if isinstance(x, tuple):
             x_l, x_g = x
-        elif isinstance(x, torch.Tensor):
+        else:
             x_l, x_g = x[:, :-self.in_cg], x[:, -self.in_cg:]
         z_l, z_g = None, None
 

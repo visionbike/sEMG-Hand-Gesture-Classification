@@ -17,6 +17,7 @@ if __name__ == '__main__':
     parser.add_argument('--wsize', type=int, default=52, help='window size')
     parser.add_argument('--first', action='store_true', default=False, help='Using first appearance')
     parser.add_argument('--rest', action='store_true', default=False, help='Using Rest label')
+    parser.add_argument('--multiproc', action='store_true', default=False, help='Using multi-processing')
     args = parser.parse_args()
 
     # create paths
@@ -56,7 +57,7 @@ if __name__ == '__main__':
 
     # process data
     print('### Processing data...')
-    processor.process_data(args.ver)
+    processor.process_data(args.ver, args.multiproc)
 
     # split data
     print('### Splitting data...')

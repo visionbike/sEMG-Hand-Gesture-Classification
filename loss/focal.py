@@ -38,7 +38,7 @@ class FocalLoss(nn.Module):
         super(FocalLoss, self).__init__()
 
         self.num_classes = num_classes
-        self.alpha = torch.tensor(alpha).float() if (alpha is not None) else alpha
+        self.alpha = torch.tensor(alpha, requires_grad=False).float() if (alpha is not None) else alpha
         self.gamma = gamma
         self.reduction = reduction
         self.ce = nn.CrossEntropyLoss(reduction='none')

@@ -48,8 +48,10 @@ class YamlConfigParser(BaseConfigParser, ABC):
         self.init_args()
 
     def _add_arguments(self) -> None:
-        self.parser.add_argument('--cfg', '-c',
+        self.parser.add_argument('--cfg',
                                  default='./cfgs/config_baseline_nina5_ver1_exp1_run1.yaml', help='the path of yaml config file.')
+        self.parser.add_argument('--log',
+                                 action='store_true', default=False, help='Applying online logging')
 
     def _print_args(self) -> None:
         super(YamlConfigParser, self)._print_args()
@@ -71,15 +73,6 @@ class YamlConfigParser(BaseConfigParser, ABC):
         with open(self.args.cfg, 'r') as f:
             cfgs = cn.load_cfg(f)
             print(f'Successfully loading the config YAML file!')
-
-        if 'ExpConfig' in cfgs.keys():
-            # create `experiments` directory
-            exp_dir = Path('./experiments') / cfgs.ExpConfig.name
-            exp_dir.mkdir(parents=True, exist_ok=True)
-            # copy the config file to current experiment directory
-            shutil.copyfile(self.args.cfg, exp_dir / f'config_{cfgs.ExpConfig.phase}.yaml')
-            # setup experiment configs
-            cfgs.ExpConfig.exp_dir = str(exp_dir)
 
         if ('DataConfig' in cfgs.keys()) and ('DataProcessConfig' in cfgs.keys()):
             # setup data path
@@ -112,13 +105,30 @@ class YamlConfigParser(BaseConfigParser, ABC):
                 cfgs.NetworkConfig.in_dims = cfgs.DataProcessConfig.window_size
             cfgs.NetworkConfig.num_classes = cfgs.DataConfig.num_classes
 
-        # setup for train/test process
-        if cfgs.ExpConfig.phase == 'train':
-            # setup loss configs
-            cfgs.LossConfig.num_classes = cfgs.DataConfig.num_classes
-            cfgs.LossConfig.weights = get_class_weights(
-                cfgs.LossConfig.num_classes,
-                cfgs.LossConfig.weights)
+        if 'ExpConfig' in cfgs.keys():
+            # name
+            cfgs.ExpConfig.name = (cfgs.DataConfig.name + '_' +
+                                   'ver' + str(cfgs.DataProcessConfig.ver) + '_' +
+                                   cfgs.NetworkConfig.name + '_' +
+                                   cfgs.NetworkConfig.attention.name + '_' +
+                                   'exp' + str(cfgs.ExpConfig.experiment))
+            # create `experiments` directory
+            exp_dir = Path('./experiments') / cfgs.ExpConfig.name
+            exp_dir.mkdir(parents=True, exist_ok=True)
+            # copy the config file to current experiment directory
+            shutil.copyfile(self.args.cfg, exp_dir / f'config_{cfgs.ExpConfig.phase}.yaml')
+            # setup experiment configs
+            cfgs.ExpConfig.exp_dir = str(exp_dir)
+            # setup logging
+            cfgs.ExpConfig.logging = self.args.log
+
+            # setup for train/test process
+            if cfgs.ExpConfig.phase == 'train':
+                # setup loss configs
+                cfgs.LossConfig.num_classes = cfgs.DataConfig.num_classes
+                cfgs.LossConfig.weights = get_class_weights(
+                    cfgs.LossConfig.num_classes,
+                    cfgs.LossConfig.weights)
 
         # setup metric config
         cfgs.MetricConfig = cn()

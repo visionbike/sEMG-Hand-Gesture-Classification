@@ -75,6 +75,8 @@ def get_model(name: str) -> nn.Module:
 
     if name == 'baseline':
         model = Baseline
+    elif name == 'ffcnet':
+        model = FFCNet
     else:
         raise ValueError(f"Expected 'name' value: 'baseline', but got 'name' = {name}.")
     return model
