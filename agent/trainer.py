@@ -82,12 +82,15 @@ class Trainer(pl.LightningModule):
         metric_test = self.metric_test.compute()
         # log figure
         cfmat = metric_test.pop('test/cfmat').cpu().detach().numpy()
-        print(cfmat.shape)
-        # fig = plt.figure(figsize=(10, 10), dpi=600)
-        ax = sns.heatmap(cfmat, annot=False, fmt='.2f', square=True, vmin=0, vmax=1, center=0, cbar=False)
+        # print(cfmat.shape)
+        df_cm = pd.DataFrame(cfmat, range(cfmat.shape[0]), range(cfmat.shape[0]))
+        fig = plt.figure()
+        sns.set(font_scale=0.25)  # for label size
+        ax = sns.heatmap(df_cm, annot=False, fmt='.2f', square=True, vmin=0, vmax=1, center=0, cbar=False)  # font size
         ax.set_xlim([0, cfmat.shape[0]])
         ax.set_ylim([0, cfmat.shape[0]])
-        # plt.show()
+        # ax = ax.get_figure
+        #
         if isinstance(self.logger, NeptuneLogger):
             self.logger.experiment['test/confusion_matrix'].upload(File.as_image(fig))
         self.log_dict(metric_test, logger=True, on_epoch=True)

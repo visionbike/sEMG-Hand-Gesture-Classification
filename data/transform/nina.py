@@ -56,18 +56,22 @@ class NinaToTensor:
 
 class NinaRandomSNR:
     """
-    Adding white noise class for NinaPro datasets.
+    Adding white noise class for NinaPro datasets with a probability of p.
     """
 
-    def __init__(self, use_rest_label: bool = True):
+    def __init__(self, use_rest_label: bool = True, p: float = 0.5):
         """
 
         :param use_rest_label: whether to use 'rest' label. Default: True.
         """
 
+        if (p < 0) or (p > 1):
+            raise ValueError(f"Expected float value '9' in range [0.0, 1.0], but got 'p' = {p}.")
+
         # noise factors to sample from, outside the function
         # because this will be called millions of times
         self.use_rest_label = use_rest_label
+        self.p = p
 
     def _add_noise_snr(self, x: NDArray, snr: float = 25.) -> NDArray:
         """
@@ -96,13 +100,14 @@ class NinaRandomSNR:
         :return: the transformed signal and its label.
         """
 
-        # get random signal-to-noise factor
-        snr = random.choice(rand_list)
-        if self.use_rest_label:
-            if y != 0:
+        if random.random() < self.p:
+            # get random signal-to-noise factor
+            snr = random.choice(rand_list)
+            if self.use_rest_label:
+                if y != 0:
+                    x = self._add_noise_snr(x, snr)
+            else:
                 x = self._add_noise_snr(x, snr)
-        else:
-            x = self._add_noise_snr(x, snr)
         return x, y
 
 

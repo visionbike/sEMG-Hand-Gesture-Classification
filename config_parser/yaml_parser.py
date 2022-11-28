@@ -49,7 +49,7 @@ class YamlConfigParser(BaseConfigParser, ABC):
 
     def _add_arguments(self) -> None:
         self.parser.add_argument('--cfg',
-                                 default='./cfgs/config_baseline_nina5_ver1_exp1_run1.yaml', help='the path of yaml config file.')
+                                 default='./cfgs/config_baseline_nina5_ver1.yaml', help='the path of yaml config file.')
         self.parser.add_argument('--log',
                                  action='store_true', default=False, help='Applying online logging')
 

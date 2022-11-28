@@ -1,5 +1,8 @@
 from copy import deepcopy
 import shutil
+import random
+import numpy as np
+import torch
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 from pytorch_lightning.loggers.neptune import NeptuneLogger
@@ -13,6 +16,11 @@ if __name__ == '__main__':
     args = parser.parse()
 
     # set seed
+    random.seed(args.ExpConfig.seed)
+    np.random.seed(args.ExpConfig.seed)
+    torch.manual_seed(args.ExpConfig.seed)
+    if args.ExpConfig.use_cuda:
+        torch.cuda.manual_seed_all(args.ExpConfig.seed)
     pl.seed_everything(args.ExpConfig.seed, workers=True)
 
     # load data module
@@ -39,8 +47,8 @@ if __name__ == '__main__':
     callbacks += [ModelCheckpoint(
         dirpath=args.ExpConfig.exp_dir + '/checkpoints',
         filename='net_{epoch:02d}',
-        monitor='val/loss',
-        mode='min',
+        monitor='val/accuracy',
+        mode='max',
         save_last=True,
         save_on_train_epoch_end=False
     )]
@@ -88,7 +96,7 @@ if __name__ == '__main__':
 
     # test
     # trainer.test(ckpt_path=args.ExpConfig.exp_dir + '/net_best.ckpt', dataloaders=data_test)
-    # trainer.validate(model, dataloaders=data_val)
+    trainer.validate(model, dataloaders=data_val)
     # trainer.validate(model, dataloaders=data_test, ckpt_path='best')
     # trainer.validate(model, dataloaders=data_test, ckpt_path='last')
     trainer.test(model, ckpt_path='best', dataloaders=data_test)
