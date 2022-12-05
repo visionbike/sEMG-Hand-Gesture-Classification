@@ -34,6 +34,8 @@ class Nina1Processor(BaseProcessor):
         :param path: the input data path.
         :param use_butter: whether to use butterworth filter. Default: True.
         :param use_rectify: whether to use rectifying. Default: True.
+        :param use_u_norm: whether to use u-law normalization. Default: False.
+        :param use_minmax_norm: whether to use min-max normalization. Default: False.
         :param ssize: step size for window rolling. Default: 2.
         :param wsize: window size for window rolling. Default: 26.
         :param use_first_appearance: if True, using first appearance strategy; otherwise, using major appearance strategy. Default: True.
@@ -149,15 +151,12 @@ class Nina1Processor(BaseProcessor):
         if self.use_rectify:
             print('# Rectifying...')
             self.emgs = [np.abs(emg) for emg in self.emgs]
-
         if self.use_butter:
             print('# Butterworth filtering...')
             self.emgs = [butter_low(emg, cutoff=1, fs=100, order=1, zero_phase=True) for emg in self.emgs]
-
         if self.use_u_norm:
             print('# Mu-law normalization...')
             self.emgs = [u_law_norm(emg, mu=2048) for emg in self.emgs]
-
         if self.use_minmax_norm:
             print('# Min-max normalization...')
             self.emgs = [minmax_norm(emg) for emg in self.emgs]

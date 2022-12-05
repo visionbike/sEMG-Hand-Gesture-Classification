@@ -10,69 +10,69 @@ from .utils import *
 
 __all__ = ['Nina4Processor']
 
-label_dict = {
-    'a': {
-        0: 0,
-        1: 1,
-        2: 2,
-        3: 3,
-        4: 4,
-        5: 5,
-        6: 6,
-        7: 7,
-        8: 8,
-        9: 9,
-        10: 10,
-        11: 11,
-        12: 12
-    },
-    'b': {
-        0: 0,
-        1: 13,
-        2: 14,
-        3: 15,
-        4: 16,
-        5: 17,
-        6: 18,
-        7: 19,
-        8: 20,
-        9: 21,
-        10: 22,
-        11: 23,
-        12: 24,
-        13: 25,
-        14: 26,
-        15: 27,
-        16: 28,
-        17: 29,
-    },
-    'c': {
-        0: 0,
-        1: 30,
-        2: 31,
-        3: 32,
-        4: 33,
-        5: 34,
-        6: 35,
-        7: 36,
-        8: 37,
-        9: 38,
-        10: 39,
-        11: 40,
-        12: 41,
-        13: 42,
-        14: 43,
-        15: 44,
-        16: 45,
-        17: 46,
-        18: 47,
-        19: 48,
-        20: 49,
-        21: 50,
-        22: 51,
-        23: 52,
-    }
-}
+# label_dict = {
+#     'a': {
+#         0: 0,
+#         1: 1,
+#         2: 2,
+#         3: 3,
+#         4: 4,
+#         5: 5,
+#         6: 6,
+#         7: 7,
+#         8: 8,
+#         9: 9,
+#         10: 10,
+#         11: 11,
+#         12: 12
+#     },
+#     'b': {
+#         0: 0,
+#         1: 13,
+#         2: 14,
+#         3: 15,
+#         4: 16,
+#         5: 17,
+#         6: 18,
+#         7: 19,
+#         8: 20,
+#         9: 21,
+#         10: 22,
+#         11: 23,
+#         12: 24,
+#         13: 25,
+#         14: 26,
+#         15: 27,
+#         16: 28,
+#         17: 29,
+#     },
+#     'c': {
+#         0: 0,
+#         1: 30,
+#         2: 31,
+#         3: 32,
+#         4: 33,
+#         5: 34,
+#         6: 35,
+#         7: 36,
+#         8: 37,
+#         9: 38,
+#         10: 39,
+#         11: 40,
+#         12: 41,
+#         13: 42,
+#         14: 43,
+#         15: 44,
+#         16: 45,
+#         17: 46,
+#         18: 47,
+#         19: 48,
+#         20: 49,
+#         21: 50,
+#         22: 51,
+#         23: 52,
+#     }
+# }
 
 
 class Nina4Processor(BaseProcessor):
@@ -87,6 +87,8 @@ class Nina4Processor(BaseProcessor):
                  path: str,
                  use_butter: bool = True,
                  use_rectify: bool = True,
+                 use_u_norm: bool = False,
+                 use_minmax_norm: bool = False,
                  ssize: int = 50,
                  wsize: int = 520,
                  use_first_appearance: bool = False,
@@ -96,6 +98,8 @@ class Nina4Processor(BaseProcessor):
         :param path: the input data path.
         :param use_butter: whether to use butterworth filter. Default: True.
         :param use_rectify: whether to use rectifying. Default: True.
+        :param use_u_norm: whether to use u-law normalization. Default: False.
+        :param use_minmax_norm: whether to use min-max normalization. Default: False.
         :param ssize: step size for window rolling. Default: 5.
         :param wsize: window size for window rolling. Default: 52.
         :param use_first_appearance: if True, using first appearance strategy; otherwise, using major appearance strategy. Default: True.
@@ -120,6 +124,8 @@ class Nina4Processor(BaseProcessor):
         self.path = Path(path)
         self.use_butter = use_butter
         self.use_rectify = use_rectify
+        self.use_u_norm = use_u_norm
+        self.use_minmax_norm = use_minmax_norm
         self.step_size = ssize
         self.window_size = wsize
         self.use_first_appearance = use_first_appearance
@@ -193,7 +199,7 @@ class Nina4Processor(BaseProcessor):
             self.reps += reps
         print('Done!')
 
-    def _process_data_v1(self, multiproc: bool = True) -> None:
+    def _process_data(self, multiproc: bool = True) -> None:
         """
         Preprocess sEMG data version 1:
         1. Processing data (rectifying, filtering, etc.)
@@ -207,13 +213,19 @@ class Nina4Processor(BaseProcessor):
         """
 
         if self.use_rectify:
-            print('Rectifying...')
+            print('# Rectifying...')
             self.emgs = [np.abs(emg) for emg in self.emgs]
         if self.use_butter:
-            print('Butterworth filtering...')
-            self.emgs = [butter_high(emg, cutoff=2., fs=200., order=3) for emg in self.emgs]
+            print('# Butterworth filtering...')
+            self.emgs = [butter_low(emg, cutoff=1, fs=2000, order=1) for emg in self.emgs]
+        if self.use_u_norm:
+            print('# Mu-law normalization...')
+            self.emgs = [u_law_norm(emg, mu=2048) for emg in self.emgs]
+        if self.use_minmax_norm:
+            print('# Min-max normalization...')
+            self.emgs = [minmax_norm(emg) for emg in self.emgs]
 
-        print('### Rolling data...')
+        print('# Rolling data...')
         self.emgs = [window_rolling(emg, self.step_size, self.window_size) for emg in self.emgs]
         self.lbls = [window_rolling(lab, self.step_size, self.window_size) for lab in self.lbls]
         self.reps = [window_rolling(rep, self.step_size, self.window_size) for rep in self.reps]
@@ -222,7 +234,7 @@ class Nina4Processor(BaseProcessor):
         self.lbls = np.moveaxis(np.concatenate(self.lbls, axis=0), 2, 1)[..., -1]
         self.reps = np.moveaxis(np.concatenate(self.reps, axis=0), 2, 1)[..., -1]
 
-        print('### Removing windows that contain multiple repetitions...')
+        print('# Removing windows that contain multiple repetitions...')
         # split by repetition, but do not want any data leaks
         # sim ply drop any window that has more than one repetition in it
         no_leaks = np.array([
@@ -237,7 +249,7 @@ class Nina4Processor(BaseProcessor):
         del no_leaks
         gc.collect()
 
-        print('### Replacing by first/major label appearance...')
+        print('# Replacing by first/major label appearance...')
         # next we want to make sure there aren't multiple labels
         # do this using the first class that appears in a window
         inn_lbls = [self.lbls[i] for i in range(self.lbls.shape[0])]
@@ -252,10 +264,9 @@ class Nina4Processor(BaseProcessor):
         del inn_lbls, inn_reps
         gc.collect()
 
-        print('### Post-processing...')
-        print('Quantifying to float16...')
+        print('# Quantifying to float16...')
         self.emgs = self.emgs.astype(np.float16)
-        print('Processing label...')
+        print('# Processing label...')
         if not self.use_rest_label:
             print(f"'use_rest_label' = {self.use_rest_label}. Removing 'rest' label data...")
             self.emgs = self.emgs[np.where(self.lbls != 0)[0]]
@@ -264,97 +275,15 @@ class Nina4Processor(BaseProcessor):
             self.lbls -= 1
         print('Done!')
 
-    def _process_data_v2(self, multiproc: bool = True) -> None:
-        """
-        Preprocess sEMG data version 2:
-        1. Rolling data
-        2. Processing data (rectifying, filtering, etc.)
-        3. Removing winding containing more than one repetition
-        4. Relabel for multiple label-containing window
-        5. Post-processing (quantize, do/do not remove rest label, etc.)
-
-        :param multiproc: whether to apply multi-processing to process data, otherwise use multi-threading. Default: True.
-        :return:
-        """
-
-        print('### Rolling data...')
-        self.emgs = [window_rolling(emg, self.step_size, self.window_size) for emg in self.emgs]
-        self.lbls = [window_rolling(lab, self.step_size, self.window_size) for lab in self.lbls]
-        self.reps = [window_rolling(rep, self.step_size, self.window_size) for rep in self.reps]
-        # reshape the data to have the axes in the proper order
-        self.emgs = np.moveaxis(np.concatenate(self.emgs, axis=0), 2, 1)
-        self.lbls = np.moveaxis(np.concatenate(self.lbls, axis=0), 2, 1)[..., -1]
-        self.reps = np.moveaxis(np.concatenate(self.reps, axis=0), 2, 1)[..., -1]
-
-        print('### Removing windows that contain multiple repetitions...')
-        # split by repetition, but do not want any data leaks
-        # simply drop any window that has more than one repetition in it
-        no_leaks = np.array([
-            i
-            for i in range(self.reps.shape[0])
-            if np.unique(self.reps[i]).shape[0] == 1
-        ])
-        self.emgs = self.emgs[no_leaks, :, :]
-        self.lbls = self.lbls[no_leaks, :]
-        self.reps = self.reps[no_leaks, :]
-        # release memory
-        del no_leaks
-        gc.collect()
-
-        print('### Replacing by first/major appearance...')
-        # next we want to make sure there aren't multiple labels
-        # do this using the first/major appearance in a window
-        inn_lbls = [self.lbls[i] for i in range(self.lbls.shape[0])]
-        inn_reps = [self.reps[i] for i in range(self.reps.shape[0])]
-        if self.use_first_appearance:
-            self.lbls = replace_by_first_label(inn_lbls, multiproc)
-            self.reps = replace_by_first_label(inn_reps, multiproc)
-        else:
-            self.lbls = replace_by_major_label(inn_lbls, multiproc)
-            self.reps = replace_by_major_label(inn_reps, multiproc)
-        # release memory
-        del inn_lbls, inn_reps
-        gc.collect()
-
-        print('### Processing data...')
-        if self.use_rectify:
-            print('Rectifying...')
-            self.emgs = np.abs(self.emgs)
-        # return self.processed_emgs
-        if self.use_butter:
-            # because the processed samples are large, therefore multiprocessing is needed
-            print('Butterworth filtering...')
-            inn_emgs = [self.emgs[i] for i in range(self.emgs.shape[0])]
-            self.emgs = process_butter_band(inn_emgs, lcut=20., hcut=40., fs=2000., order=4)
-            # release memory
-            del inn_emgs
-            gc.collect()
-
-        print('### Post processing...')
-        print('Quantifying to float16...')
-        self.emgs = self.emgs.astype(np.float16)
-        print('Processing label...')
-        if not self.use_rest_label:
-            print(f"'use_rest_label' = {self.use_rest_label}. Removing 'rest' label data...")
-            self.emgs = self.emgs[np.where(self.lbls != 0)[0]]
-            self.reps = self.reps[np.where(self.lbls != 0)[0]]
-            self.lbls = self.lbls[np.where(self.lbls != 0)[0]]
-            self.lbls -= 1
-        print('Done!')
-
-    def process_data(self, ver: int = 1, multiproc: bool = True) -> None:
+    def process_data(self, multiproc: bool = True) -> None:
         """
         Processing sEMG data.
 
-        :param ver: Process data by the 1st or 2nd way. Default: 1.
         :param multiproc: whether to apply multi-processing to process data, otherwise use multi-threading. Default: True.
         :return:
         """
 
-        if ver == 1:
-            self._process_data_v1(multiproc)
-        else:
-            self._process_data_v2(multiproc)
+        self._process_data(multiproc)
 
     def split_data(self, split: str) -> dict[str, Any]:
         """
