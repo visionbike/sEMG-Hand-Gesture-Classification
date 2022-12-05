@@ -1,7 +1,5 @@
-import os
 from typing import Union, Optional
 import multiprocessing as multproc
-from concurrent.futures import ThreadPoolExecutor
 from numpy.typing import NDArray
 import numpy as np
 
@@ -65,7 +63,7 @@ def replace_by_major_label(x: list, multiproc: bool = True) -> NDArray:
         with multproc.Pool(processes=num_workers) as p:
             z = list(p.imap(_get_major_label, x, chunksize=num_samples // num_workers))
     else:
-        z = map(_get_major_label, x)
+        z = list(map(_get_major_label, x))
     return np.asarray(z)
 
 
