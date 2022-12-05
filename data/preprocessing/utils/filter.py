@@ -1,134 +1,66 @@
 import multiprocessing as multproc
-# from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from numpy.typing import NDArray
 import numpy as np
 import scipy.signal as signal
 
-__all__ = ['process_butter_low', 'process_butter_high', 'process_butter_band', 'butter_low', 'butter_high', 'butter_band', 'moving_average']
+__all__ = ['butter_low', 'butter_high', 'butter_band', 'moving_average']
 
 
-def process_butter_low(x: list, cutoff=2., fs=200., order=4) -> NDArray:
-    """
-    Multiprocessing function to process butterworth lowpass filter for multiple signals.
-
-    :param x: the input signal list.
-    :param cutoff: the cut-off frequency. Default: 2.
-    :param fs: the sampling rate. Default: 200.
-    :param order: the order of the filter. Default: 4.
-    :return: the filtered signals.
-    """
-
-    # with ThreadPoolExecutor(max_workers=min(32, os.cpu_count() + 4)) as executor:
-    #     z = [r for r in executor.map(partial(butter_low, cutoff=cutoff, fs=fs, order=order), x)]
-    num_workers = multproc.cpu_count() - 1
-    num_samples = len(x)
-    with multproc.Pool(processes=num_workers) as p:
-        z = list(p.imap(partial(butter_low, cutoff=cutoff, fs=fs, order=order), x, chunksize=num_samples // num_workers))
-    return np.asarray(z)
-
-
-def process_butter_high(x: list, cutoff=2., fs=200., order=4) -> NDArray:
-    """
-    Multiprocessing function to process butterworth highpass filter for multiple signals.
-
-    :param x: the input signal list.
-    :param cutoff: the cut-off frequency. Default: 2.
-    :param fs: the sampling rate. Default: 200.
-    :param order: the order of the filter. Default: 4.
-    :return: the filtered signals.
-    """
-
-    # with ThreadPoolExecutor(max_workers=min(32, os.cpu_count() + 4)) as executor:
-    #      z = [r for r in executor.map(partial(butter_high, cutoff=cutoff, fs=fs, order=order), x)]
-    num_workers = multproc.cpu_count() - 1
-    num_samples = len(x)
-    with multproc.Pool(processes=num_workers) as p:
-        z = list(p.imap(partial(butter_high, cutoff=cutoff, fs=fs, order=order), x, chunksize=num_samples // num_workers))
-    return np.asarray(z)
-
-
-def process_butter_band(x: list, lcut=5., hcut=99., fs=200., order=4) -> NDArray:
-    """
-    Multiprocessing function to process butterworth bandpass filter for multiple signals.
-
-    :param x: the input signal list.
-    :param lcut: the low-cut frequency. Default: 5.
-    :param hcut: the high-cut frequency. Default: 99.
-    :param fs: the sampling rate. Default: 200.
-    :param order: the order of the filter. Default: 4.
-    :return: the filtered signals.
-    """
-
-    # with ThreadPoolExecutor(max_workers=min(32, os.cpu_count() + 4)) as executor:
-    #     z = list(executor.map(partial(butter_band, lcut=lcut, hcut=hcut, fs=fs, order=order), x))
-    num_workers = multproc.cpu_count() - 1
-    num_samples = len(x)
-    with multproc.Pool(processes=num_workers) as p:
-        z = list(p.imap(partial(butter_band, lcut=lcut, hcut=hcut, fs=fs, order=order), x, chunksize=num_samples // num_workers))
-    return np.asarray(z)
-
-
-def butter_low(x: NDArray, cutoff: float = 2., fs: float = 200., order: int = 4) -> NDArray:
+def butter_low(x: NDArray, cutoff: float = 2., fs: float = 200., order: int = 4, zero_phase: bool = True) -> NDArray:
     """
     Butterworth lowpass filter
 
-    :param x: the input signal.
+    :param x: the input signal in shape of (N, C).
     :param cutoff: the cut-off frequency. Default: 2.
     :param fs: the sampling rate. Default: 200.
     :param order: the order of the filter. Default: 4.
+    :param zero_phase: whether to apply zero-phase filter (for offline data). Default: True.
     :return: the output signal.
     """
 
     nyq = 0.5 * fs  # nyquist frequency
     cutoff = cutoff / nyq
-    # sos = signal.butter(N=order, Wn=cutoff, btype='low', analog=False, output='sos')
-    # z = signal.sosfilt(sos, x)
     [b, a] = signal.butter(N=order, Wn=cutoff, btype='low', analog=False)
-    z = signal.lfilter(b, a, x)
-    return z
+    return signal.filtfilt(b, a, x, axis=0, padtype='odd', padlen=3 * (max(len(b), len(a)) - 1)) if zero_phase else signal.lfilter(b, a, x, axis=0)
 
 
-def butter_high(x: NDArray, cutoff: float = 2., fs: float = 200., order: int = 4) -> NDArray:
+def butter_high(x: NDArray, cutoff: float = 2., fs: float = 200., order: int = 4, zero_phase=True) -> NDArray:
     """
     Butterworth highpass filter
 
-    :param x: the input signal.
+    :param x: the input signal in shape of (N, C).
     :param cutoff: the cut-off frequency. Default: 2.
     :param fs: the sampling rate. Default: 200.
     :param order: the order of the filter. Default: 4.
+    :param zero_phase: whether to apply zero-phase filter (for offline data). Default: True.
     :return: the output signal.
     """
 
     nyq = 0.5 * fs  # nyquist frequency
     cutoff = cutoff / nyq
-    # sos = signal.butter(N=order, Wn=cutoff, btype='high', analog=False, output='sos')
-    # z = signal.sosfilt(sos, x)
     [b, a] = signal.butter(N=order, Wn=cutoff, btype='high', analog=False)
-    z = signal.lfilter(b, a, x)
-    return z
+    return signal.filtfilt(b, a, x, axis=0, padtype='odd', padlen=3 * (max(len(b), len(a)) - 1)) if zero_phase else signal.lfilter(b, a, x, axis=0)
 
 
-def butter_band(x: NDArray, lcut: float = 2., hcut: float = 5., fs: float = 200., order: int = 4) -> NDArray:
+def butter_band(x: NDArray, lcut: float = 2., hcut: float = 5., fs: float = 200., order: int = 4, zero_phase: bool = True) -> NDArray:
     """
     Butterworth bandpass filter
 
-    :param x: the input signal.
+    :param x: the input signal in shape of (N, C).
     :param lcut: the low-cut frequency. Default: 2.
     :param hcut: the high-cut frequency. Default: 5.
     :param fs: the sampling rate. Default: 200.
     :param order: the order of the filter. Default: 4.
+    :param zero_phase: whether to apply zero-phase filter (for offline data). Default: True.
     :return:
     """
 
     nyq = 0.5 * fs  # nyquist frequency
     lcut = lcut / nyq
     hcut = hcut / nyq
-    # sos = signal.butter(N=order, Wn=[lcut, hcut], btype='band', analog=False, output='sos')
-    # z = signal.sosfilt(sos, x)
     [b, a] = signal.butter(N=order, Wn=[lcut, hcut], btype='band', analog=False)
-    z = signal.lfilter(b, a, x)
-    return z
+    return signal.filtfilt(b, a, x, axis=0, padtype='odd', padlen=3 * (max(len(b), len(a)) - 1)) if zero_phase else signal.lfilter(b, a, x, axis=0)
 
 
 def moving_average(x: NDArray, ksize: int = 3) -> NDArray:
