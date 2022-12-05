@@ -7,27 +7,30 @@ from data.preprocessing import *
 
 if __name__ == '__main__':
     # load arguments
-    parser = ArgumentParser(description='NinaPro4 Processing')
-    parser.add_argument('--path', type=str, help='The raw Nina5 path')
+    parser = ArgumentParser(description='NinaPro1 Processing')
+    parser.add_argument('--path', type=str, help='The raw Nina1 path')
     parser.add_argument('--save', type=str, help='The save path')
-    parser.add_argument('--ver', type=int, default=1, help='The processing version')
     parser.add_argument('--rectify', action='store_true', default=False, help='Using signal rectifying')
     parser.add_argument('--butter', action='store_true', default=False, help='Using butterworth filter')
-    parser.add_argument('--ssize', type=int, default=5, help='step size')
-    parser.add_argument('--wsize', type=int, default=52, help='window size')
+    parser.add_argument('--ulaw', action='store_true', default=False, help='Using u-law normalization')
+    parser.add_argument('--minmax', action='store_true', default=False, help='Using min-max normalization')
+    parser.add_argument('--ssize', type=int, default=2, help='step size')
+    parser.add_argument('--wsize', type=int, default=26, help='window size')
     parser.add_argument('--first', action='store_true', default=False, help='Using first appearance')
     parser.add_argument('--rest', action='store_true', default=False, help='Using Rest label')
     parser.add_argument('--multiproc', action='store_true', default=False, help='Using multi-processing')
     args = parser.parse_args()
 
     # create paths
-    folder = f'ver{args.ver}_'
-
+    folder = ''
     if args.rectify:
         folder += 'rectify_'
-
     if args.butter:
         folder += 'butter_'
+    if args.ulaw:
+        folder += 'ulaw_'
+    if args.minmax:
+        folder += 'minmax_'
 
     folder += f's{args.ssize}_'
     folder += f'w{args.wsize}_'
@@ -50,6 +53,8 @@ if __name__ == '__main__':
     processor = Nina1Processor(path=args.path,
                                use_rectify=args.rectify,
                                use_butter=args.butter,
+                               use_u_norm=args.ulaw,
+                               use_minmax_norm=args.minmax,
                                ssize=args.ssize,
                                wsize=args.wsize,
                                use_first_appearance=args.first,
@@ -57,7 +62,7 @@ if __name__ == '__main__':
 
     # process data
     print('### Processing data...')
-    processor.process_data(args.ver, args.multiproc)
+    processor.process_data(args.multiproc)
 
     # split data
     print('### Splitting data...')
