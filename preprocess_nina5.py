@@ -10,10 +10,11 @@ if __name__ == '__main__':
     parser = ArgumentParser(description='NinaPro5 Processing')
     parser.add_argument('--path', type=str, help='The raw Nina5 path')
     parser.add_argument('--save', type=str, help='The save path')
-    parser.add_argument('--ver', type=int, default=1, help='The processing version')
     parser.add_argument('--imu', action='store_true', default=False, help='Using IMU data')
     parser.add_argument('--rectify', action='store_true', default=False, help='Using signal rectifying')
     parser.add_argument('--butter', action='store_true', default=False, help='Using butterworth filter')
+    parser.add_argument('--ulaw', action='store_true', default=False, help='Using u-law normalization')
+    parser.add_argument('--minmax', action='store_true', default=False, help='Using min-max normalization')
     parser.add_argument('--ssize', type=int, default=5, help='step size')
     parser.add_argument('--wsize', type=int, default=52, help='window size')
     parser.add_argument('--first', action='store_true', default=False, help='Using first appearance')
@@ -22,16 +23,17 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # create paths
-    folder = f'ver{args.ver}_'
-
+    folder = ''
     if args.imu:
         folder += 'imu_'
-
     if args.rectify:
         folder += 'rectify_'
-
     if args.butter:
         folder += 'butter_'
+    if args.ulaw:
+        folder += 'ulaw_'
+    if args.minmax:
+        folder += 'minmax_'
 
     folder += f's{args.ssize}_'
     folder += f'w{args.wsize}_'
@@ -62,7 +64,7 @@ if __name__ == '__main__':
 
     # process data
     print('### Processing data...')
-    processor.process_data(args.ver, args.multiproc)
+    processor.process_data(args.multiproc)
 
     # split data
     print('### Splitting data...')
