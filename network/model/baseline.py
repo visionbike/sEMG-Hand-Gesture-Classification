@@ -2,7 +2,7 @@ from typing import Optional
 from collections import OrderedDict
 import torch
 import torch.nn as nn
-from network.model.init_weight import *
+from network.init import *
 
 __all__ = ['Baseline']
 
@@ -41,16 +41,8 @@ class Baseline(nn.Module):
         :param kwargs: argument dict.
         """
 
-        if att_kwargs is None:
-            self.att_kwargs = {}
-        else:
-            self.att_kwargs = att_kwargs
-
-        if drop_rate is None:
-            drop = nn.Identity
-        else:
-            drop = nn.Dropout
-
+        self.att_kwargs = {} if att_kwargs is None else att_kwargs
+        drop = nn.Identity if drop_rate is None else nn.Dropout
         super(Baseline, self).__init__()
 
         # expansion block
@@ -73,21 +65,28 @@ class Baseline(nn.Module):
             norm_1=nn.LayerNorm(500),
             act_1=nn.Mish(inplace=True),
             drop_1=drop(p=drop_rate),
-            #
             linear_2=nn.Linear(500, 500, bias=True),
             norm_2=nn.LayerNorm(500),
             act_2=nn.Mish(inplace=True),
             drop_2=drop(p=drop_rate),
-            #
             linear_3=nn.Linear(500, 2000, bias=True),
             norm_3=nn.LayerNorm(2000),
             act_3=nn.Mish(inplace=True),
             drop_3=drop(p=drop_rate),
-            #
             linear_4=nn.Linear(2000, num_classes, bias=False)
         ))
 
-        self.apply(init_weight)
+        self.apply(self._init_weights)
+
+    def _init_weights(self, m: nn.Module):
+        if isinstance(m, nn.Linear):
+            init_zero_linear(m.weight)
+        elif isinstance(m, nn.Conv1d):
+            init_zero_conv1d(m.weight)
+        elif isinstance(m, nn.Conv2d):
+            init_zero_conv2d(m.weight)
+        if m.bias is not None:
+            nn.init.constant_(m.bias, 0)
 
     def forward(self, x: torch.Tensor):
         """
