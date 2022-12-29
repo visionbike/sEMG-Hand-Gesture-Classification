@@ -4,7 +4,6 @@ import torch.nn as nn
 from network.layer import *
 from network.model.ffc_resnet import *
 from network.model.pre_ffc_resnet import *
-from network.model.init_weight import *
 
 __all__ = ['FFCNet']
 
@@ -47,8 +46,6 @@ class FFCNet(nn.Module):
                                            ratio_gin, ratio_gout,
                                            ksize, stride, padding, groups, enable_lfu,
                                            norm_layer, act_layer, att_layer, att_kwargs, **kwargs)
-
-        self.apply(init_weight)
 
     def forward(self, x: torch.Tensor):
         # (B, C, F, T) -> (B, C, F, T, 2)

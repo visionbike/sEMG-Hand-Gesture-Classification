@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as Fn
 from network.layer import *
 from network.block import *
-from network.model.init_weight import *
+
 
 __all__ = ['FFCResnet']
 
@@ -121,8 +121,6 @@ class FFCResnet(nn.Module):
         self.att = att_layer(**att_kwargs)
         #
         self.linear = nn.Linear(mid_channels * in_freq * in_time, num_classes, bias=False)
-        #
-        self.apply(init_weight)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """

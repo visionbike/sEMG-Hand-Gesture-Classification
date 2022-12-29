@@ -35,7 +35,7 @@ class StftConv(nn.Module):
                  pad_center: bool = True,
                  pad_mode: str = 'reflect',
                  sampling_rate: int = 200,
-                 trainable: bool = True,
+                 trainable: bool = False,
                  feature_type: str = 'complex'):
         """
 

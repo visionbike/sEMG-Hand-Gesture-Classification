@@ -11,71 +11,6 @@ from .utils import *
 __all__ = ['Nina5Processor']
 
 
-# label_dict = {
-#     'a': {
-#         0: 0,
-#         1: 1,
-#         2: 2,
-#         3: 3,
-#         4: 4,
-#         5: 5,
-#         6: 6,
-#         7: 7,
-#         8: 8,
-#         9: 9,
-#         10: 10,
-#         11: 11,
-#         12: 12
-#     },
-#     'b': {
-#         0: 0,
-#         1: 13,
-#         2: 14,
-#         3: 15,
-#         4: 16,
-#         5: 17,
-#         6: 18,
-#         7: 19,
-#         8: 20,
-#         9: 21,
-#         10: 22,
-#         11: 23,
-#         12: 24,
-#         13: 25,
-#         14: 26,
-#         15: 27,
-#         16: 28,
-#         17: 29,
-#     },
-#     'c': {
-#         0: 0,
-#         1: 30,
-#         2: 31,
-#         3: 32,
-#         4: 33,
-#         5: 34,
-#         6: 35,
-#         7: 36,
-#         8: 37,
-#         9: 38,
-#         10: 39,
-#         11: 40,
-#         12: 41,
-#         13: 42,
-#         14: 43,
-#         15: 44,
-#         16: 45,
-#         17: 46,
-#         18: 47,
-#         19: 48,
-#         20: 49,
-#         21: 50,
-#         22: 51,
-#         23: 52,
-#     }
-# }
-
-
 class Nina5Processor(BaseProcessor):
     """
     The preprocessing class for NinaPro DB5 data.
@@ -138,8 +73,6 @@ class Nina5Processor(BaseProcessor):
         super(Nina5Processor, self).__init__()
 
         self.emgs, self.imus, self.lbls, self.reps = None, None, None, None
-        # self.emgs, self.pimus, self.plbls, self.preps = None, None, None, None
-
         self.load_data()
 
     def _load_file(self, path: str, ex: str) -> tuple[Any, list[Any] | Any, int | Any, Any]:
@@ -230,7 +163,7 @@ class Nina5Processor(BaseProcessor):
             self.emgs = [butter_low(emg, cutoff=1, fs=200, order=1) for emg in self.emgs]
         if self.use_u_norm:
             print('# Mu-law normalization...')
-            self.emgs = [u_law_norm(emg, mu=2048) for emg in self.emgs]
+            self.emgs = [ulaw_norm(emg, mu=2048) for emg in self.emgs]
         if self.use_minmax_norm:
             print('# Min-max normalization...')
             self.emgs = [minmax_norm(emg) for emg in self.emgs]
